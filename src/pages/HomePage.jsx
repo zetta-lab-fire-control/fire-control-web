@@ -265,7 +265,8 @@ export default function HomePage() {
       )}
 
       {/* Mapa + Painel de detalhes */}
-      <section className="grid gap-6 xl:grid-cols-[1.6fr,1fr]">
+      {/* relative z-0 isola o z-index do Leaflet, impedindo que sobreponha a Navbar sticky */}
+      <section className="relative z-0 grid gap-6 xl:grid-cols-[1.6fr,1fr]">
         {/* Mapa Leaflet */}
         <div className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-2">
           <div className="h-[62vh] min-h-[420px] rounded-2xl">

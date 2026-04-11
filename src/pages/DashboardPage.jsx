@@ -193,7 +193,8 @@ export default function DashboardPage() {
       )}
 
       {/* Mapa operacional */}
-      <section className="mb-6 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-2">
+      {/* relative z-0 isola o z-index do Leaflet, impedindo que sobreponha a Navbar sticky */}
+      <section className="relative z-0 mb-6 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-2">
         <div className="h-[46vh] min-h-[320px] rounded-2xl">
           <MapContainer center={northMinasCenter} zoom={7} className="h-full w-full rounded-2xl">
             <TileLayer

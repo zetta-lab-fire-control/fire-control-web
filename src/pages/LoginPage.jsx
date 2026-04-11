@@ -18,7 +18,7 @@
  */
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Flame, Loader2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth.js'
 
@@ -33,14 +33,15 @@ export default function LoginPage() {
   const [error, setError] = useState(null)
 
   // ------------------------------------------------------------
-  // Submit
+  // Submit — chama a API de autenticação
+  // TODO: quando o backend retornar JWT com role real, o redirect
+  // por perfil funcionará automaticamente via userData.role
   // ------------------------------------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
 
-    // Validação básica no frontend
     if (!email.trim() || !password.trim()) {
       setError('Por favor, preencha todos os campos.')
       return
@@ -50,16 +51,9 @@ export default function LoginPage() {
 
     try {
       const userData = await login(email, password)
-
-      /*
-       * TODO (integração pendente): quando o backend retornar o role real via JWT,
-       * o campo `userData.role` conterá 'firefighter', 'admin' ou 'user'.
-       * Por enquanto, simulamos como 'user' para não travar o fluxo.
-       */
       const isFirefighter = userData.role === 'firefighter' || userData.role === 'admin'
       navigate(isFirefighter ? '/painel' : '/reportar', { replace: true })
     } catch (err) {
-      // Exibe mensagem de erro sem expor detalhes técnicos ao usuário
       setError('Credenciais inválidas. Verifique seu e-mail e senha.')
     } finally {
       setLoading(false)
@@ -157,6 +151,14 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        {/* Link direto para o painel — mantido enquanto o backend não entrega JWT */}
+        <Link
+          to="/painel"
+          className="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-orange-500/40 bg-orange-500/10 px-4 py-2 text-sm font-semibold text-orange-100 hover:bg-orange-500/20"
+        >
+          Entrar no painel dos bombeiros
+        </Link>
       </section>
     </main>
   )
