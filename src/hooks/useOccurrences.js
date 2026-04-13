@@ -15,7 +15,7 @@ import { occurrenceApi } from '../services/api.js'
 import { adaptOccurrenceList } from '../services/occurrenceAdapter.js'
 import { mockOccurrences } from '../data/mockOccurrences.js'
 
-export function useOccurrences({ filters = {}, pollInterval = 5000 } = {}) {
+export function useOccurrences({ filters = {}, pollInterval = 60000 } = {}) {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)

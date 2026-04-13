@@ -22,6 +22,9 @@ export const reportValidationRules = {
   firefighterConfirmation: 'Confirmacao dos bombeiros -> ocorrencia confirmada',
 }
 
+const nowTs = Date.now()
+const tMinus = (hours) => new Date(nowTs - hours * 60 * 60 * 1000).toISOString()
+
 export const mockOccurrences = [
   {
     id: 'OCC-101',
@@ -32,13 +35,13 @@ export const mockOccurrences = [
     intensity: 'ALTA',
     status: 'EM_ATENDIMENTO',
     reportsCount: 6,
-    createdAt: '2026-03-26T11:14:00-03:00',
-    updatedAt: '2026-03-26T12:40:00-03:00',
+    createdAt: tMinus(4),
+    updatedAt: tMinus(1),
     photos: ['/placeholder/fire-1.jpg', '/placeholder/fire-2.jpg'],
     reports: [
-      { id: 'DEN-9001', createdAt: '2026-03-26T11:14:00-03:00', intensity: 'ALTA', photo: '/placeholder/fire-1.jpg' },
-      { id: 'DEN-9002', createdAt: '2026-03-26T11:33:00-03:00', intensity: 'ALTA', photo: '/placeholder/fire-2.jpg' },
-      { id: 'DEN-9003', createdAt: '2026-03-26T11:40:00-03:00', intensity: 'MEDIA', photo: '/placeholder/fire-1.jpg' },
+      { id: 'DEN-9001', createdAt: tMinus(4), intensity: 'ALTA', photo: '/placeholder/fire-1.jpg' },
+      { id: 'DEN-9002', createdAt: tMinus(3.5), intensity: 'ALTA', photo: '/placeholder/fire-2.jpg' },
+      { id: 'DEN-9003', createdAt: tMinus(3), intensity: 'MEDIA', photo: '/placeholder/fire-1.jpg' },
     ],
   },
   {
@@ -50,13 +53,13 @@ export const mockOccurrences = [
     intensity: 'MEDIA',
     status: 'VALIDADO_AUTO',
     reportsCount: 3,
-    createdAt: '2026-03-26T09:05:00-03:00',
-    updatedAt: '2026-03-26T09:48:00-03:00',
+    createdAt: tMinus(8),
+    updatedAt: tMinus(7),
     photos: ['/placeholder/fire-3.jpg'],
     reports: [
-      { id: 'DEN-9010', createdAt: '2026-03-26T09:05:00-03:00', intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
-      { id: 'DEN-9011', createdAt: '2026-03-26T09:28:00-03:00', intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
-      { id: 'DEN-9012', createdAt: '2026-03-26T09:48:00-03:00', intensity: 'ALTA', photo: '/placeholder/fire-3.jpg' },
+      { id: 'DEN-9010', createdAt: tMinus(8), intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
+      { id: 'DEN-9011', createdAt: tMinus(7.5), intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
+      { id: 'DEN-9012', createdAt: tMinus(7.2), intensity: 'ALTA', photo: '/placeholder/fire-3.jpg' },
     ],
   },
   {
@@ -68,13 +71,13 @@ export const mockOccurrences = [
     intensity: 'CONTROLADO',
     status: 'SOLUCIONADO',
     reportsCount: 4,
-    createdAt: '2026-03-25T18:15:00-03:00',
-    updatedAt: '2026-03-25T19:30:00-03:00',
+    createdAt: tMinus(28),
+    updatedAt: tMinus(26),
     photos: ['/placeholder/fire-4.jpg'],
     reports: [
-      { id: 'DEN-9020', createdAt: '2026-03-25T18:15:00-03:00', intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
-      { id: 'DEN-9021', createdAt: '2026-03-25T18:29:00-03:00', intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
-      { id: 'DEN-9022', createdAt: '2026-03-25T18:42:00-03:00', intensity: 'BAIXA', photo: '/placeholder/fire-4.jpg' },
+      { id: 'DEN-9020', createdAt: tMinus(28), intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
+      { id: 'DEN-9021', createdAt: tMinus(27.5), intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
+      { id: 'DEN-9022', createdAt: tMinus(26.2), intensity: 'BAIXA', photo: '/placeholder/fire-4.jpg' },
     ],
   },
   {
@@ -86,12 +89,12 @@ export const mockOccurrences = [
     intensity: 'ALTA',
     status: 'EM_ANALISE',
     reportsCount: 2,
-    createdAt: '2026-03-26T13:20:00-03:00',
-    updatedAt: '2026-03-26T13:40:00-03:00',
+    createdAt: tMinus(2),
+    updatedAt: tMinus(1.5),
     photos: ['/placeholder/fire-5.jpg'],
     reports: [
-      { id: 'DEN-9030', createdAt: '2026-03-26T13:20:00-03:00', intensity: 'ALTA', photo: '/placeholder/fire-5.jpg' },
-      { id: 'DEN-9031', createdAt: '2026-03-26T13:40:00-03:00', intensity: 'MEDIA', photo: '/placeholder/fire-5.jpg' },
+      { id: 'DEN-9030', createdAt: tMinus(2), intensity: 'ALTA', photo: '/placeholder/fire-5.jpg' },
+      { id: 'DEN-9031', createdAt: tMinus(1.5), intensity: 'MEDIA', photo: '/placeholder/fire-5.jpg' },
     ],
   },
   {
@@ -103,13 +106,13 @@ export const mockOccurrences = [
     intensity: 'BAIXA',
     status: 'CONFIRMADO_BOMBEIROS',
     reportsCount: 5,
-    createdAt: '2026-03-26T10:05:00-03:00',
-    updatedAt: '2026-03-26T12:00:00-03:00',
+    createdAt: tMinus(6),
+    updatedAt: tMinus(4),
     photos: ['/placeholder/fire-6.jpg'],
     reports: [
-      { id: 'DEN-9040', createdAt: '2026-03-26T10:05:00-03:00', intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
-      { id: 'DEN-9041', createdAt: '2026-03-26T10:16:00-03:00', intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
-      { id: 'DEN-9042', createdAt: '2026-03-26T10:28:00-03:00', intensity: 'MEDIA', photo: '/placeholder/fire-6.jpg' },
+      { id: 'DEN-9040', createdAt: tMinus(6), intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
+      { id: 'DEN-9041', createdAt: tMinus(5.5), intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
+      { id: 'DEN-9042', createdAt: tMinus(4.2), intensity: 'MEDIA', photo: '/placeholder/fire-6.jpg' },
     ],
   },
 ]
