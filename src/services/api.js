@@ -10,9 +10,7 @@
 
 import axios from 'axios'
 
-// ------------------------------------------------------------
 // Instância base do axios
-// ------------------------------------------------------------
 
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'https://localhost:8000',
@@ -39,10 +37,8 @@ http.interceptors.response.use(
   },
 )
 
-// ------------------------------------------------------------
 // Autenticação — POST /api/auth/login
 // Retorna: { token, role } (quando backend implementar JWT)
-// ------------------------------------------------------------
 
 export const authApi = {
   /**
@@ -59,9 +55,7 @@ export const authApi = {
   logout: () => http.post('/api/auth/logout').then((r) => r.data),
 }
 
-// ------------------------------------------------------------
 // Ocorrências
-// ------------------------------------------------------------
 
 export const occurrenceApi = {
   /**
@@ -108,9 +102,7 @@ export const occurrenceApi = {
       .then((r) => r.data),
 }
 
-// ------------------------------------------------------------
 // Denúncias — POST /reports
-// ------------------------------------------------------------
 
 export const reportApi = {
   /**
@@ -128,9 +120,7 @@ export const reportApi = {
     http.post('/reports', { report: reportData, media: mediaList }).then((r) => r.data),
 }
 
-// ------------------------------------------------------------
 // Mídia — upload de fotos via MinIO (URL pré-assinada)
-// ------------------------------------------------------------
 
 export const mediaApi = {
   /**

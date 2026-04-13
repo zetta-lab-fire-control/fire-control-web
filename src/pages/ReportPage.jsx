@@ -24,9 +24,7 @@ import { reportApi, mediaApi } from '../services/api.js'
 import { intensityToApi } from '../services/occurrenceAdapter.js'
 import { reportValidationRules } from '../data/mockOccurrences.js'
 
-// ------------------------------------------------------------
 // Configurações do formulário
-// ------------------------------------------------------------
 
 const intensityOptions = [
   { value: '', label: 'Selecione a intensidade' },
@@ -35,9 +33,7 @@ const intensityOptions = [
   { value: 'ALTA', label: 'Alta — fogo intenso ou spreading' },
 ]
 
-// ------------------------------------------------------------
 // Componente principal
-// ------------------------------------------------------------
 
 export default function ReportPage() {
   const navigate = useNavigate()
@@ -63,10 +59,6 @@ export default function ReportPage() {
     }
   }, [submittedCode, navigate])
 
-  // ------------------------------------------------------------
-  // Geolocalização automática
-  // ------------------------------------------------------------
-
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
       setLocationText('Geolocalização indisponível neste navegador.')
@@ -89,10 +81,6 @@ export default function ReportPage() {
     )
   }
 
-  // ------------------------------------------------------------
-  // Submit — fluxo de criação de denúncia
-  // ------------------------------------------------------------
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
@@ -113,9 +101,7 @@ export default function ReportPage() {
     try {
       let mediaList = []
 
-      // ----------------------------------------------------
       // Etapa 1 (opcional): upload de foto via MinIO
-      // ----------------------------------------------------
       if (photoFile) {
         // Obtém URL de upload pré-assinado do backend
         const mediaResponse = await mediaApi.create({
@@ -132,9 +118,7 @@ export default function ReportPage() {
         mediaList = [mediaResponse.instance_metadata]
       }
 
-      // ----------------------------------------------------
       // Etapa 2: cria a denúncia no backend
-      // ----------------------------------------------------
       const reportData = {
         // TODO: substituir pelo ID real do usuário autenticado (via contexto de auth)
         user_id: '69c2ca14-8d07-416b-9109-fb5220b9a7eb', // UUID do usuário anônimo sistema
@@ -168,9 +152,7 @@ export default function ReportPage() {
     }
   }
 
-  // ------------------------------------------------------------
   // Render
-  // ------------------------------------------------------------
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6">

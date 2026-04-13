@@ -27,9 +27,7 @@ import { adaptPublicIndicators } from '../services/occurrenceAdapter.js'
 import { formatDateTime } from '../utils/formatters.js'
 import { useEffect } from 'react'
 
-// ------------------------------------------------------------
 // Configurações estáticas
-// ------------------------------------------------------------
 
 const periodOptions = [
   { value: 'today', label: 'Hoje' },
@@ -48,9 +46,7 @@ const statusVisibleOnMap = new Set([
   'SOLUCIONADO',
 ])
 
-// ------------------------------------------------------------
 // Utilitários
-// ------------------------------------------------------------
 
 /** Cria ícone customizado para o marcador do mapa */
 const createFireIcon = (intensity, pulse = false) => {
@@ -63,9 +59,7 @@ const createFireIcon = (intensity, pulse = false) => {
   })
 }
 
-// ------------------------------------------------------------
 // Componente principal
-// ------------------------------------------------------------
 
 export default function HomePage() {
   const [period, setPeriod] = useState('today')
@@ -82,16 +76,11 @@ export default function HomePage() {
     occurrenceApi
       .getPublicIndicators()
       .then((raw) => setPublicStats(adaptPublicIndicators(raw)))
-      .catch(() => setPublicStats(null)) // fallback: calcula dos dados locais
+      .catch(() => setPublicStats(null))
   }, [])
-
-  // ------------------------------------------------------------
-  // Filtragem de ocorrências
-  // ------------------------------------------------------------
 
   const visibleOccurrences = useMemo(() => {
     return occurrences.filter((occ) => {
-      // Apenas status que devem aparecer no mapa público
       if (!statusVisibleOnMap.has(occ.status)) return false
 
       const createdAt = new Date(occ.createdAt)
@@ -107,21 +96,14 @@ export default function HomePage() {
     })
   }, [occurrences, period, cityQuery, intensity])
 
-  // Ocorrência selecionada — prioriza o ID clicado, depois o primeiro visível
   const selectedOccurrence =
     visibleOccurrences.find((item) => item.id === selectedOccurrenceId) ??
     visibleOccurrences[0] ??
     null
 
-  // ------------------------------------------------------------
-  // Indicadores dos StatCards
-  // (usa API se disponível, calcula localmente como fallback)
-  // ------------------------------------------------------------
-
   const stats = useMemo(() => {
     if (publicStats) return publicStats
 
-    // Fallback calculado localmente a partir dos dados de mock/API
     const activeToday = visibleOccurrences.filter(
       (o) => o.status !== 'SOLUCIONADO' && o.status !== 'ALERTA_FALSO',
     ).length
@@ -143,13 +125,8 @@ export default function HomePage() {
     return { activeToday, affectedCities, risk, lastUpdate }
   }, [publicStats, visibleOccurrences])
 
-  // ------------------------------------------------------------
-  // Render
-  // ------------------------------------------------------------
-
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
-      {/* Cabeçalho */}
       <section className="mb-6 rounded-3xl border border-orange-500/20 bg-gradient-to-r from-amber-950 via-zinc-950 to-emerald-950 p-6 text-white">
         <p className="text-xs uppercase tracking-[0.25em] text-orange-200/80">
           UAI - ALERTA DE UNIDADE DE INCÊNDIO

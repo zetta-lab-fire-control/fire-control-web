@@ -16,9 +16,7 @@
  *   - reportsCount, createdAt, updatedAt em camelCase
  */
 
-// ------------------------------------------------------------
 // Mapeamentos de enum: API → componentes internos
-// ------------------------------------------------------------
 
 /** Converte intensidade da API para o formato interno usado nos componentes */
 export const intensityFromApi = {
@@ -54,9 +52,7 @@ export const statusToApi = {
   ALERTA_FALSO: 'invalidated',
 }
 
-// ------------------------------------------------------------
 // Funções de conversão
-// ------------------------------------------------------------
 
 /**
  * Converte uma ocorrência retornada pela API para o formato

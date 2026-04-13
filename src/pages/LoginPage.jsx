@@ -32,11 +32,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  // ------------------------------------------------------------
   // Submit — chama a API de autenticação
   // TODO: quando o backend retornar JWT com role real, o redirect
   // por perfil funcionará automaticamente via userData.role
-  // ------------------------------------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -60,9 +58,7 @@ export default function LoginPage() {
     }
   }
 
-  // ------------------------------------------------------------
   // Render
-  // ------------------------------------------------------------
 
   return (
     <main className="mx-auto flex w-full max-w-md px-4 py-10">

@@ -27,9 +27,7 @@ import { statusToApi } from '../services/occurrenceAdapter.js'
 import { useOccurrences } from '../hooks/useOccurrences.js'
 import { formatDateTime } from '../utils/formatters.js'
 
-// ------------------------------------------------------------
 // Configurações estáticas
-// ------------------------------------------------------------
 
 /** Statuses disponíveis para o select do painel */
 const availableStatuses = [
@@ -53,9 +51,7 @@ const createOperationalIcon = (intensity) =>
     iconAnchor: [11, 11],
   })
 
-// ------------------------------------------------------------
 // Componente principal
-// ------------------------------------------------------------
 
 export default function DashboardPage() {
   const [search, setSearch] = useState('')
@@ -72,9 +68,7 @@ export default function DashboardPage() {
   // Isso garante que novas denúncias apareçam no mapa em tempo real
   const { data: occurrences, loading, refetch } = useOccurrences({ pollInterval: 10000 })
 
-  // ------------------------------------------------------------
   // Filtros locais na tabela
-  // ------------------------------------------------------------
 
   const filteredOccurrences = useMemo(() => {
     return occurrences.filter((item) => {
@@ -115,9 +109,7 @@ export default function DashboardPage() {
     return { emAnalise, emAtendimento, controladasHoje }
   }, [occurrences])
 
-  // ------------------------------------------------------------
   // Atualização de status via API
-  // ------------------------------------------------------------
 
   /**
    * Envia o novo status para a API e atualiza o estado local.
@@ -145,9 +137,7 @@ export default function DashboardPage() {
     }
   }
 
-  // ------------------------------------------------------------
   // Render
-  // ------------------------------------------------------------
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
