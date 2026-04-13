@@ -100,7 +100,7 @@ export default function HistoryPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
-      <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100">
+      <section className="rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-6 text-zinc-100">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">Historico de ocorrencias</h1>

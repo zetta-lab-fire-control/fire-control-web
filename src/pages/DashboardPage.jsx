@@ -181,7 +181,7 @@ export default function DashboardPage() {
 
       {/* Mapa operacional */}
       {/* relative z-0 isola o z-index do Leaflet, impedindo que sobreponha a Navbar sticky */}
-      <section className="relative z-0 mb-6 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-2">
+      <section className="relative z-0 mb-6 overflow-hidden rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-2">
         <div className="h-[46vh] min-h-[320px] rounded-2xl">
           <MapContainer center={northMinasCenter} zoom={7} className="h-full w-full rounded-2xl">
             <TileLayer
@@ -211,7 +211,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Filtros da tabela */}
-      <section className="mb-6 grid gap-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 md:grid-cols-4">
+      <section className="mb-6 grid gap-3 rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-4 md:grid-cols-4">
         <input
           id="dashboard-busca"
           value={search}
@@ -250,7 +250,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Tabela de ocorrências */}
-      <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100">
+      <section className="mb-6 rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-6 text-zinc-100">
         <h2 className="text-lg font-semibold">Lista de ocorrências</h2>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -297,7 +297,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Detalhe da ocorrência selecionada */}
-      <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100">
+      <section className="rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-6 text-zinc-100">
         <h2 className="text-lg font-semibold">Detalhe da ocorrência</h2>
 
         {!selectedOccurrence && (

@@ -1,15 +1,17 @@
 export default function StatCard({ title, value, note, tone = 'red' }) {
   const tones = {
-    red: 'border-red-400/30 bg-red-500/10 text-red-100',
-    amber: 'border-amber-400/30 bg-amber-500/10 text-amber-100',
-    emerald: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100',
+    red: 'border-t-red-500 from-red-500/5 to-transparent text-red-50',
+    amber: 'border-t-amber-500 from-amber-500/5 to-transparent text-amber-50',
+    emerald: 'border-t-emerald-500 from-emerald-500/5 to-transparent text-emerald-50',
   }
 
   return (
-    <article className={`rounded-2xl border p-4 shadow-lg shadow-black/10 ${tones[tone]}`}>
-      <p className="text-xs uppercase tracking-wider opacity-80">{title}</p>
-      <p className="mt-2 text-3xl font-semibold">{value}</p>
-      <p className="mt-1 text-xs opacity-80">{note}</p>
+    <article className={`group relative overflow-hidden rounded-2xl border border-white/10 border-t-[3px] bg-gradient-to-b bg-zinc-800/60 p-5 shadow-xl backdrop-blur-xl transition-all hover:-translate-y-1 hover:shadow-black/20 ${tones[tone]}`}>
+      <div className="relative z-10">
+        <p className="text-xs tracking-wider text-zinc-400 font-medium uppercase">{title}</p>
+        <p className="mt-3 text-4xl font-bold tracking-tight">{value}</p>
+        <p className="mt-2 text-xs font-medium text-zinc-500 group-hover:text-zinc-400 transition-colors">{note}</p>
+      </div>
     </article>
   )
 }

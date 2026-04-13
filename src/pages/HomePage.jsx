@@ -171,7 +171,7 @@ export default function HomePage() {
       </section>
 
       {/* Filtros */}
-      <section className="mb-6 grid gap-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 md:grid-cols-4">
+      <section className="mb-6 grid gap-3 rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-4 md:grid-cols-4">
         <label className="grid gap-2 text-sm text-zinc-200">
           <span className="inline-flex items-center gap-2 text-zinc-400">
             <Filter size={14} /> Período
@@ -241,7 +241,7 @@ export default function HomePage() {
       {/* relative z-0 isola o z-index do Leaflet, impedindo que sobreponha a Navbar sticky */}
       <section className="relative z-0 grid gap-6 xl:grid-cols-[1.6fr,1fr]">
         {/* Mapa Leaflet */}
-        <div className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-2">
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-2">
           <div className="h-[62vh] min-h-[420px] rounded-2xl">
             <MapContainer center={northMinasCenter} zoom={7} className="h-full w-full rounded-2xl">
               <TileLayer
@@ -282,7 +282,7 @@ export default function HomePage() {
         </div>
 
         {/* Painel de detalhes do foco selecionado */}
-        <aside className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 text-zinc-100">
+        <aside className="rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-5 text-zinc-100">
           <h2 className="text-lg font-semibold">Detalhes do foco</h2>
 
           {!selectedOccurrence && (

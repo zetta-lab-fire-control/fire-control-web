@@ -62,7 +62,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-md px-4 py-10">
-      <section className="w-full rounded-3xl border border-zinc-800 bg-zinc-950 p-8 text-zinc-100 shadow-2xl shadow-black/20">
+      <section className="w-full rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-8 text-zinc-100 shadow-2xl shadow-black/20">
         {/* Logo e título */}
         <div className="mb-6 flex items-center gap-3">
           <span className="rounded-xl bg-orange-600 p-2">

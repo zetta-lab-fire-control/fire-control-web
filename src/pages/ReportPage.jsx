@@ -156,7 +156,7 @@ export default function ReportPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6">
-      <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100">
+      <section className="rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-6 text-zinc-100">
         <h1 className="text-2xl font-semibold">Reportar foco de incêndio</h1>
         <p className="mt-2 text-sm text-zinc-400">
           Envie uma denúncia para acionar alerta comunitário e apoiar resposta rápida dos
