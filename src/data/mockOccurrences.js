@@ -35,7 +35,7 @@ export const mockOccurrences = [
     intensity: 'ALTA',
     status: 'EM_ATENDIMENTO',
     reportsCount: 6,
-    createdAt: tMinus(4),
+    createdAt: tMinus(4), // 4 horas atrás (Hoje)
     updatedAt: tMinus(1),
     photos: ['/placeholder/fire-1.jpg', '/placeholder/fire-2.jpg'],
     reports: [
@@ -53,13 +53,13 @@ export const mockOccurrences = [
     intensity: 'MEDIA',
     status: 'VALIDADO_AUTO',
     reportsCount: 3,
-    createdAt: tMinus(8),
-    updatedAt: tMinus(7),
+    createdAt: tMinus(24 * 3), // 3 dias atrás (Filtro 7 dias)
+    updatedAt: tMinus(24 * 2.8),
     photos: ['/placeholder/fire-3.jpg'],
     reports: [
-      { id: 'DEN-9010', createdAt: tMinus(8), intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
-      { id: 'DEN-9011', createdAt: tMinus(7.5), intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
-      { id: 'DEN-9012', createdAt: tMinus(7.2), intensity: 'ALTA', photo: '/placeholder/fire-3.jpg' },
+      { id: 'DEN-9010', createdAt: tMinus(24 * 3), intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
+      { id: 'DEN-9011', createdAt: tMinus(24 * 2.9), intensity: 'MEDIA', photo: '/placeholder/fire-3.jpg' },
+      { id: 'DEN-9012', createdAt: tMinus(24 * 2.8), intensity: 'ALTA', photo: '/placeholder/fire-3.jpg' },
     ],
   },
   {
@@ -71,13 +71,13 @@ export const mockOccurrences = [
     intensity: 'CONTROLADO',
     status: 'SOLUCIONADO',
     reportsCount: 4,
-    createdAt: tMinus(28),
-    updatedAt: tMinus(26),
+    createdAt: tMinus(24 * 16), // 16 dias atrás (Filtro 30 dias)
+    updatedAt: tMinus(24 * 15),
     photos: ['/placeholder/fire-4.jpg'],
     reports: [
-      { id: 'DEN-9020', createdAt: tMinus(28), intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
-      { id: 'DEN-9021', createdAt: tMinus(27.5), intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
-      { id: 'DEN-9022', createdAt: tMinus(26.2), intensity: 'BAIXA', photo: '/placeholder/fire-4.jpg' },
+      { id: 'DEN-9020', createdAt: tMinus(24 * 16), intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
+      { id: 'DEN-9021', createdAt: tMinus(24 * 15.5), intensity: 'MEDIA', photo: '/placeholder/fire-4.jpg' },
+      { id: 'DEN-9022', createdAt: tMinus(24 * 15), intensity: 'BAIXA', photo: '/placeholder/fire-4.jpg' },
     ],
   },
   {
@@ -89,7 +89,7 @@ export const mockOccurrences = [
     intensity: 'ALTA',
     status: 'EM_ANALISE',
     reportsCount: 2,
-    createdAt: tMinus(2),
+    createdAt: tMinus(2), // 2 horas atrás (Hoje)
     updatedAt: tMinus(1.5),
     photos: ['/placeholder/fire-5.jpg'],
     reports: [
@@ -106,13 +106,13 @@ export const mockOccurrences = [
     intensity: 'BAIXA',
     status: 'CONFIRMADO_BOMBEIROS',
     reportsCount: 5,
-    createdAt: tMinus(6),
-    updatedAt: tMinus(4),
+    createdAt: tMinus(24 * 45), // 45 dias atrás (Fora do filtro mensal para testes)
+    updatedAt: tMinus(24 * 40),
     photos: ['/placeholder/fire-6.jpg'],
     reports: [
-      { id: 'DEN-9040', createdAt: tMinus(6), intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
-      { id: 'DEN-9041', createdAt: tMinus(5.5), intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
-      { id: 'DEN-9042', createdAt: tMinus(4.2), intensity: 'MEDIA', photo: '/placeholder/fire-6.jpg' },
+      { id: 'DEN-9040', createdAt: tMinus(24 * 45), intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
+      { id: 'DEN-9041', createdAt: tMinus(24 * 44), intensity: 'BAIXA', photo: '/placeholder/fire-6.jpg' },
+      { id: 'DEN-9042', createdAt: tMinus(24 * 40), intensity: 'MEDIA', photo: '/placeholder/fire-6.jpg' },
     ],
   },
 ]
