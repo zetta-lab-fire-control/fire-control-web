@@ -8,7 +8,7 @@ import DashboardPage from './pages/DashboardPage.jsx'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <div className="min-h-screen bg-zinc-950 text-zinc-100">
         <Navbar />
         <Routes>
