@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ResponsiveContainer, ComposedChart, Line, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { Loader2 } from 'lucide-react'
 import { occurrenceApi } from '../services/api.js'
+import { historyByPeriod } from '../data/mockOccurrences.js'
 
 const periodOptions = [
   { value: '30', label: 'Ultimos 30 dias' },
@@ -47,8 +48,9 @@ export default function HistoryPage() {
         const response = await occurrenceApi.getHistory(startDate, endDate)
         setHistoryData(response)
       } catch (err) {
-        setError(err.message || 'Nao foi possivel carregar o historico da API.')
-        setHistoryData(null)
+        console.warn('API offline: carregando mock de historico por periodo.')
+        setError(null) // Esconde network error no ambiente de github pages
+        setHistoryData({ isMock: true, periodId: period })
       } finally {
         setLoading(false)
       }
@@ -66,6 +68,7 @@ export default function HistoryPage() {
 
   const chartData = useMemo(() => {
     if (!historyData) return []
+    if (historyData.isMock) return historyByPeriod[historyData.periodId] || []
 
     const counts = historyData.intensity_count?.counts ?? {}
     const total = Number(historyData.occurrences_count ?? 0)
@@ -83,6 +86,12 @@ export default function HistoryPage() {
   }, [historyData, period])
 
   const topCities = useMemo(() => {
+    if (historyData?.isMock) {
+      const mockArr = historyByPeriod[historyData.periodId] || []
+      // Mock simples: lista as cidades unicas baseadas em cidadeMaiorFoco no array
+      return mockArr.map(x => ({ city: x.cidadeMaiorFoco, count: x.ocorrencias })).slice(0, 4)
+    }
+
     if (!historyData?.cities_count) return []
     return [...historyData.cities_count]
       .sort((a, b) => Number(b.count) - Number(a.count))
