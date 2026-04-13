@@ -60,6 +60,8 @@ export function useOccurrences({ filters = {}, pollInterval = 5000 } = {}) {
     if (!pollInterval || pollInterval <= 0) return
 
     const interval = setInterval(() => {
+      // Otimização: reduz carga no servidor ignorando a aba quando estiver inativa/minimizada
+      if (document.hidden) return
       fetchOccurrences()
     }, pollInterval)
 
