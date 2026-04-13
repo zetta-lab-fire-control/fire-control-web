@@ -17,7 +17,8 @@
  *  - Status inicial sempre "Em análise"
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Loader2, MapPin } from 'lucide-react'
 import { reportApi, mediaApi } from '../services/api.js'
 import { intensityToApi } from '../services/occurrenceAdapter.js'
@@ -39,6 +40,7 @@ const intensityOptions = [
 // ------------------------------------------------------------
 
 export default function ReportPage() {
+  const navigate = useNavigate()
   const [lat, setLat] = useState('')
   const [lng, setLng] = useState('')
   const [locationText, setLocationText] = useState('')
@@ -50,6 +52,16 @@ export default function ReportPage() {
   const [loading, setLoading] = useState(false)
   const [submittedCode, setSubmittedCode] = useState(null)
   const [error, setError] = useState(null)
+
+  // Redireciona para dashboard após 3 segundos de denúncia criada com sucesso
+  useEffect(() => {
+    if (submittedCode) {
+      const timer = setTimeout(() => {
+        navigate('/dashboard')
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [submittedCode, navigate])
 
   // ------------------------------------------------------------
   // Geolocalização automática
@@ -107,8 +119,10 @@ export default function ReportPage() {
       if (photoFile) {
         // Obtém URL de upload pré-assinado do backend
         const mediaResponse = await mediaApi.create({
-          extension: photoFile.name.split('.').pop(),
-          bucket: 'reports', // bucket padrão definido pelo backend
+          extension: photoFile.name.split('.').pop().toLowerCase(),
+          bucket: 'reports',
+          type: 'image', // tipo padrão para fotos
+          size: photoFile.size, // tamanho do arquivo em bytes
         })
 
         // Faz o upload direto para o MinIO com a URL pré-assinada
@@ -122,6 +136,8 @@ export default function ReportPage() {
       // Etapa 2: cria a denúncia no backend
       // ----------------------------------------------------
       const reportData = {
+        // TODO: substituir pelo ID real do usuário autenticado (via contexto de auth)
+        user_id: '69c2ca14-8d07-416b-9109-fb5220b9a7eb', // UUID do usuário anônimo sistema
         location: {
           latitude: parseFloat(lat),
           longitude: parseFloat(lng),

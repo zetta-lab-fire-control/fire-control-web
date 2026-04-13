@@ -1,9 +1,9 @@
 /**
  * Camada de serviço centralizada para comunicação com a API REST.
  *
- * Base URL: https://localhost:8000
+ * Base URL: configurada via variável de ambiente VITE_API_URL (ver .env.example).
  * Nota: em desenvolvimento, o certificado SSL é autoassinado.
- * Acesse https://localhost:8000/docs uma vez no navegador para aceitar.
+ * Acesse a URL da API uma vez no navegador para aceitá-lo antes de usar o frontend.
  *
  * Todos os erros da API são capturados aqui e relançados com mensagem legível.
  */
@@ -15,7 +15,7 @@ import axios from 'axios'
 // ------------------------------------------------------------
 
 const http = axios.create({
-  baseURL: 'https://localhost:8000',
+  baseURL: import.meta.env.VITE_API_URL ?? 'https://localhost:8000',
   headers: { 'Content-Type': 'application/json' },
   timeout: 10_000,
 })
@@ -115,18 +115,17 @@ export const occurrenceApi = {
 export const reportApi = {
   /**
    * Registra uma nova denúncia de foco de incêndio.
-   * Rota protegida — requer autenticação.
    *
    * Fluxo esperado quando há foto:
-   *   1. POST /media      → recebe { upload_url, instance_metadata }
-   *   2. PUT upload_url   → envia o arquivo diretamente para o MinIO
-   *   3. POST /reports    → envia os dados da denúncia com a lista de IDs de mídia
+   *   1. POST /media      → obtém URL de upload e ID da mídia
+   *   2. PUT upload_url   → envia o arquivo diretamente para o storage
+   *   3. POST /reports    → cria a denúncia com os dados + referências de mídia
    *
-   * @param {object} reportData - Dados da denúncia
+   * @param {object} reportData - Dados da denúncia (user_id, location, intensity, type)
    * @param {Array}  mediaList  - Lista de objetos de mídia já criados (pode ser vazia)
    */
   create: (reportData, mediaList = []) =>
-    http.post('/reports', reportData, { params: { media: mediaList } }).then((r) => r.data),
+    http.post('/reports', { report: reportData, media: mediaList }).then((r) => r.data),
 }
 
 // ------------------------------------------------------------

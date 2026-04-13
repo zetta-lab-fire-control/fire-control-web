@@ -72,8 +72,9 @@ export default function DashboardPage() {
   const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false)
   const [statusUpdateError, setStatusUpdateError] = useState(null)
 
-  // Busca ocorrências da API (sem filtros — dashboard vê tudo)
-  const { data: occurrences, loading, refetch } = useOccurrences()
+  // Busca ocorrências da API com polling (recarrega a cada 5 segundos)
+  // Isso garante que novas denúncias apareçam no mapa em tempo real
+  const { data: occurrences, loading, refetch } = useOccurrences({ pollInterval: 10000 })
 
   // ------------------------------------------------------------
   // Filtros locais na tabela
