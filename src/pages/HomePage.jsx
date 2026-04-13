@@ -24,6 +24,7 @@ import { intensityMeta, northMinasCenter, statusMeta } from '../data/mockOccurre
 import { useOccurrences } from '../hooks/useOccurrences.js'
 import { occurrenceApi } from '../services/api.js'
 import { adaptPublicIndicators } from '../services/occurrenceAdapter.js'
+import { formatDateTime } from '../utils/formatters.js'
 import { useEffect } from 'react'
 
 // ------------------------------------------------------------
@@ -50,11 +51,6 @@ const statusVisibleOnMap = new Set([
 // ------------------------------------------------------------
 // Utilitários
 // ------------------------------------------------------------
-
-const formatDateTime = (value) =>
-  new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(
-    new Date(value),
-  )
 
 /** Cria ícone customizado para o marcador do mapa */
 const createFireIcon = (intensity, pulse = false) => {

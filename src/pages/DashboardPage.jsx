@@ -25,6 +25,7 @@ import { intensityMeta, northMinasCenter, statusMeta } from '../data/mockOccurre
 import { occurrenceApi } from '../services/api.js'
 import { statusToApi } from '../services/occurrenceAdapter.js'
 import { useOccurrences } from '../hooks/useOccurrences.js'
+import { formatDateTime } from '../utils/formatters.js'
 
 // ------------------------------------------------------------
 // Configurações estáticas
@@ -42,11 +43,6 @@ const availableStatuses = [
 
 /** Statuses que somem do mapa após 24h */
 const hiddenAfter24hStatuses = new Set(['SOLUCIONADO', 'ALERTA_FALSO'])
-
-const formatDateTime = (value) =>
-  new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(
-    new Date(value),
-  )
 
 /** Cria ícone operacional (sem pulsar) */
 const createOperationalIcon = (intensity) =>
