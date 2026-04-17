@@ -16,16 +16,12 @@
  *   - reportsCount, createdAt, updatedAt em camelCase
  */
 
-// Mapeamentos de enum: API → componentes internos
-
-/** Converte intensidade da API para o formato interno usado nos componentes */
 export const intensityFromApi = {
   low: 'BAIXA',
   medium: 'MEDIA',
   high: 'ALTA',
 }
 
-/** Converte intensidade do formato interno para o formato esperado pela API */
 export const intensityToApi = {
   BAIXA: 'low',
   MEDIA: 'medium',
@@ -33,7 +29,6 @@ export const intensityToApi = {
   CONTROLADO: 'low', // fallback — controlado não existe na API, usamos low
 }
 
-/** Converte status da API para o formato interno */
 export const statusFromApi = {
   pending_confirmation: 'EM_ANALISE',
   validated: 'VALIDADO_AUTO',
@@ -42,25 +37,15 @@ export const statusFromApi = {
   invalidated: 'ALERTA_FALSO',
 }
 
-/** Converte status do formato interno para o formato esperado pela API */
 export const statusToApi = {
   EM_ANALISE: 'pending_confirmation',
   VALIDADO_AUTO: 'validated',
-  CONFIRMADO_BOMBEIROS: 'executing', // mapeado para executing (mais próximo)
-  EM_ATENDIMENTO: 'executing',
+  CONFIRMADO_BOMBEIROS: 'validated', // mapped to validated (closest valid enum)
+  EM_ATENDIMENTO: 'validated',
   SOLUCIONADO: 'resolved',
   ALERTA_FALSO: 'invalidated',
 }
 
-// Funções de conversão
-
-/**
- * Converte uma ocorrência retornada pela API para o formato
- * consumido pelos componentes React.
- *
- * @param {object} apiOccurrence - Objeto retornado pelo endpoint GET /occurrences
- * @returns {object} Ocorrência no formato interno
- */
 export function adaptOccurrence(apiOccurrence) {
   const { id, location, intensity, status, city, created_at, resolved_at, reports = [] } =
     apiOccurrence
@@ -97,11 +82,6 @@ export function adaptOccurrence(apiOccurrence) {
   }
 }
 
-/**
- * Converte uma lista de ocorrências da API.
- * @param {object[]} apiList
- * @returns {object[]}
- */
 export function adaptOccurrenceList(apiList = []) {
   return apiList
     .filter((occ) => {
@@ -115,11 +95,6 @@ export function adaptOccurrenceList(apiList = []) {
     .map(adaptOccurrence)
 }
 
-/**
- * Converte indicadores públicos da API para o formato dos StatCards.
- * @param {object} apiIndicators
- * @returns {{ activeToday, affectedCities, risk, lastUpdate }}
- */
 export function adaptPublicIndicators(apiIndicators) {
   const { active_occurrences, affected_municipalities_count, risk_level, last_updated } =
     apiIndicators

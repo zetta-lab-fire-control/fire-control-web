@@ -1,22 +1,6 @@
 /**
- * LoginPage — Tela de Login Unificada
- *
- * Funcionalidades (Épico EXTRA — Login redefinido):
- *  - Tela única para todos os tipos de usuário
- *  - Validação de campos obrigatórios antes do envio
- *  - Autenticação via POST /api/auth/login
- *  - Redirecionamento por perfil:
- *      • firefighter / admin → /painel (Painel dos Bombeiros)
- *      • user               → /reportar (Reportar Foco)
- *  - Mensagem de erro para credenciais inválidas
- *  - Responsivo
- *
- * TODO (integração pendente com backend):
- *   O endpoint POST /api/auth/login atualmente retorna `true` hardcoded.
- *   Quando o backend implementar JWT e roles, remover o mock de role abaixo
- *   e usar o valor retornado diretamente em `result.role`.
+ * LoginPage — Tela de Login
  */
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Flame, Loader2 } from 'lucide-react'
@@ -33,8 +17,6 @@ export default function LoginPage() {
   const [error, setError] = useState(null)
 
   // Submit — chama a API de autenticação
-  // TODO: quando o backend retornar JWT com role real, o redirect
-  // por perfil funcionará automaticamente via userData.role
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -58,12 +40,11 @@ export default function LoginPage() {
     }
   }
 
-  // Render
+
 
   return (
     <main className="mx-auto flex w-full max-w-md px-4 py-10">
       <section className="w-full rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-8 text-zinc-100 shadow-2xl shadow-black/20">
-        {/* Logo e título */}
         <div className="mb-6 flex items-center gap-3">
           <span className="rounded-xl bg-orange-600 p-2">
             <Flame size={22} />
@@ -79,9 +60,7 @@ export default function LoginPage() {
           operacional.
         </p>
 
-        {/* Formulário */}
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-          {/* Email */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">E-mail</span>
             <input
@@ -96,7 +75,6 @@ export default function LoginPage() {
             />
           </label>
 
-          {/* Senha */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">Senha</span>
             <div className="relative">
@@ -121,7 +99,6 @@ export default function LoginPage() {
             </div>
           </label>
 
-          {/* Mensagem de erro */}
           {error && (
             <div
               role="alert"
@@ -131,7 +108,6 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Botão de entrar */}
           <button
             id="btn-login"
             type="submit"
@@ -148,13 +124,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Link direto para o painel — mantido enquanto o backend não entrega JWT */}
-        <Link
-          to="/painel"
-          className="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-orange-500/40 bg-orange-500/10 px-4 py-2 text-sm font-semibold text-orange-100 hover:bg-orange-500/20"
-        >
-          Entrar no painel dos bombeiros
-        </Link>
       </section>
     </main>
   )

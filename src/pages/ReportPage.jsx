@@ -1,20 +1,5 @@
 /**
  * ReportPage — Registrar Denúncia de Foco de Incêndio
- *
- * Funcionalidades (Épico 3):
- *  - Formulário de denúncia com validação de campos obrigatórios
- *  - Detecção automática de geolocalização
- *  - Upload de foto (via MinIO pré-assinado):
- *      1. POST /media     → obtém URL de upload e ID da mídia
- *      2. PUT upload_url  → envia o arquivo diretamente ao storage
- *      3. POST /reports   → cria a denúncia com o ID da mídia
- *  - Confirmação com código da ocorrência e status "Em análise"
- *  - Validação automática de 3 denúncias na mesma área
- *
- * Regras de negócio:
- *  - Todos os campos obrigatórios devem ser preenchidos
- *  - O código da ocorrência é retornado pela API
- *  - Status inicial sempre "Em análise"
  */
 
 import { useEffect, useState } from 'react'
@@ -23,8 +8,9 @@ import { CheckCircle, Loader2, MapPin } from 'lucide-react'
 import { reportApi, mediaApi } from '../services/api.js'
 import { intensityToApi } from '../services/occurrenceAdapter.js'
 import { reportValidationRules } from '../data/mockOccurrences.js'
+import { useAuth } from '../hooks/useAuth.js'
 
-// Configurações do formulário
+
 
 const intensityOptions = [
   { value: '', label: 'Selecione a intensidade' },
@@ -33,7 +19,7 @@ const intensityOptions = [
   { value: 'ALTA', label: 'Alta — fogo intenso ou spreading' },
 ]
 
-// Componente principal
+
 
 export default function ReportPage() {
   const navigate = useNavigate()
@@ -44,6 +30,8 @@ export default function ReportPage() {
   const [intensity, setIntensity] = useState('')
   const [description, setDescription] = useState('')
   const [photoFile, setPhotoFile] = useState(null)
+  
+  const { user } = useAuth()
 
   const [loading, setLoading] = useState(false)
   const [submittedCode, setSubmittedCode] = useState(null)
@@ -120,8 +108,7 @@ export default function ReportPage() {
 
       // Etapa 2: cria a denúncia no backend
       const reportData = {
-        // TODO: substituir pelo ID real do usuário autenticado (via contexto de auth)
-        user_id: '69c2ca14-8d07-416b-9109-fb5220b9a7eb', // UUID do usuário anônimo sistema
+        user_id: user?.id,
         location: {
           latitude: parseFloat(lat),
           longitude: parseFloat(lng),
@@ -132,11 +119,9 @@ export default function ReportPage() {
 
       const result = await reportApi.create(reportData, mediaList)
 
-      // A API retorna a denúncia criada com o ID da ocorrência vinculada
       const occurrenceId = result?.occurrence_id ?? result?.id ?? 'N/D'
       setSubmittedCode(String(occurrenceId))
 
-      // Limpa o formulário após sucesso
       setLat('')
       setLng('')
       setLocationText('')
@@ -152,7 +137,7 @@ export default function ReportPage() {
     }
   }
 
-  // Render
+
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6">
@@ -163,9 +148,7 @@ export default function ReportPage() {
           bombeiros.
         </p>
 
-        {/* Formulário */}
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4" noValidate>
-          {/* Localização */}
           <div className="grid gap-2 text-sm">
             <span className="text-zinc-300">Localização <span className="text-red-400">*</span></span>
             <div className="flex flex-wrap gap-2">
@@ -201,7 +184,6 @@ export default function ReportPage() {
             )}
           </div>
 
-          {/* Intensidade */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">
               Intensidade percebida <span className="text-red-400">*</span>
@@ -221,7 +203,6 @@ export default function ReportPage() {
             </select>
           </label>
 
-          {/* Foto */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">Foto do foco (opcional)</span>
             <input
@@ -238,7 +219,6 @@ export default function ReportPage() {
             )}
           </label>
 
-          {/* Descrição (campo auxiliar — não enviado à API, para referência do usuário) */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">Descrição adicional (opcional)</span>
             <textarea
