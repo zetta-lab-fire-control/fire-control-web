@@ -8,7 +8,7 @@ import { CheckCircle, Loader2, MapPin } from 'lucide-react'
 import { reportApi, mediaApi } from '../services/api.js'
 import { intensityToApi } from '../services/occurrenceAdapter.js'
 import { reportValidationRules } from '../data/mockOccurrences.js'
-import { useAuth } from '../hooks/useAuth.js'
+import { useAuthContext } from '../contexts/AuthContext.jsx'
 
 
 
@@ -31,7 +31,7 @@ export default function ReportPage() {
   const [description, setDescription] = useState('')
   const [photoFile, setPhotoFile] = useState(null)
   
-  const { user } = useAuth()
+  const { user } = useAuthContext()
 
   const [loading, setLoading] = useState(false)
   const [submittedCode, setSubmittedCode] = useState(null)
@@ -41,7 +41,7 @@ export default function ReportPage() {
   useEffect(() => {
     if (submittedCode) {
       const timer = setTimeout(() => {
-        navigate('/dashboard')
+        navigate('/')
       }, 3000)
       return () => clearTimeout(timer)
     }
