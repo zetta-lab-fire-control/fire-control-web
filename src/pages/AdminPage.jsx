@@ -30,24 +30,33 @@ import { adminApi } from '../services/api.js'
 // ─── Componente de Modal ────────────────────────────────────────────────────
 
 function CreateFirefighterModal({ onClose, onSuccess }) {
-  const [name, setName]         = useState('')
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState(null)
+  const [firstname, setFirstname]   = useState('')
+  const [lastname, setLastname]     = useState('')
+  const [email, setEmail]           = useState('')
+  const [telephone, setTelephone]   = useState('')
+  const [password, setPassword]     = useState('')
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
 
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      setError('Preencha todos os campos obrigatórios.')
+    if (!firstname.trim() || !lastname.trim() || !email.trim() || !password.trim()) {
+      setError('Preencha todos os campos obrigatórios (nome, sobrenome, e-mail e senha).')
       return
     }
 
     setLoading(true)
     try {
-      await adminApi.createFirefighter({ name, email, password })
+      await adminApi.createFirefighter({
+        firstname,
+        lastname,
+        email,
+        telephone: telephone.trim() || '00000000000',
+        password,
+        role: 'firefighter',
+      })
       onSuccess()
     } catch (err) {
       setError(err.message || 'Erro ao criar bombeiro.')
@@ -86,26 +95,42 @@ function CreateFirefighterModal({ onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit} className="grid gap-4" noValidate>
-          {/* Nome */}
-          <label className="grid gap-1.5 text-sm">
-            <span className="flex items-center gap-1.5 text-zinc-400">
-              <Users size={13} /> Nome completo
-            </span>
-            <input
-              id="admin-novo-bombeiro-nome"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="João da Silva"
-              className="rounded-xl border border-zinc-700/60 bg-zinc-800/60 px-3 py-2.5 text-zinc-100 placeholder-zinc-600 outline-none transition focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30"
-              required
-            />
-          </label>
+          {/* Nome e Sobrenome */}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="grid gap-1.5 text-sm">
+              <span className="flex items-center gap-1.5 text-zinc-400">
+                <Users size={13} /> Nome <span className="text-red-400">*</span>
+              </span>
+              <input
+                id="admin-novo-bombeiro-nome"
+                type="text"
+                value={firstname}
+                onChange={(e) => setFirstname(e.target.value)}
+                placeholder="João"
+                className="rounded-xl border border-zinc-700/60 bg-zinc-800/60 px-3 py-2.5 text-zinc-100 placeholder-zinc-600 outline-none transition focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30"
+                required
+              />
+            </label>
+            <label className="grid gap-1.5 text-sm">
+              <span className="flex items-center gap-1.5 text-zinc-400">
+                <Users size={13} /> Sobrenome <span className="text-red-400">*</span>
+              </span>
+              <input
+                id="admin-novo-bombeiro-sobrenome"
+                type="text"
+                value={lastname}
+                onChange={(e) => setLastname(e.target.value)}
+                placeholder="Silva"
+                className="rounded-xl border border-zinc-700/60 bg-zinc-800/60 px-3 py-2.5 text-zinc-100 placeholder-zinc-600 outline-none transition focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30"
+                required
+              />
+            </label>
+          </div>
 
           {/* Email */}
           <label className="grid gap-1.5 text-sm">
             <span className="flex items-center gap-1.5 text-zinc-400">
-              <Mail size={13} /> E-mail profissional
+              <Mail size={13} /> E-mail profissional <span className="text-red-400">*</span>
             </span>
             <input
               id="admin-novo-bombeiro-email"
@@ -118,10 +143,25 @@ function CreateFirefighterModal({ onClose, onSuccess }) {
             />
           </label>
 
+          {/* Telefone */}
+          <label className="grid gap-1.5 text-sm">
+            <span className="flex items-center gap-1.5 text-zinc-400">
+              <Lock size={13} /> Telefone
+            </span>
+            <input
+              id="admin-novo-bombeiro-telefone"
+              type="tel"
+              value={telephone}
+              onChange={(e) => setTelephone(e.target.value)}
+              placeholder="(31) 99999-9999"
+              className="rounded-xl border border-zinc-700/60 bg-zinc-800/60 px-3 py-2.5 text-zinc-100 placeholder-zinc-600 outline-none transition focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30"
+            />
+          </label>
+
           {/* Senha */}
           <label className="grid gap-1.5 text-sm">
             <span className="flex items-center gap-1.5 text-zinc-400">
-              <Lock size={13} /> Senha provisória
+              <Lock size={13} /> Senha provisória <span className="text-red-400">*</span>
             </span>
             <input
               id="admin-novo-bombeiro-senha"
@@ -367,7 +407,7 @@ export default function AdminPage() {
                     className="group border-b border-zinc-800/40 transition hover:bg-zinc-800/30"
                   >
                     <td className="py-3 pl-3 pr-4 font-medium text-zinc-200">
-                      {u.name ?? u.full_name ?? '—'}
+                      {[u.firstname, u.lastname].filter(Boolean).join(' ') || '—'}
                     </td>
                     <td className="px-4 py-3 text-zinc-400">{u.email}</td>
                     <td className="px-4 py-3">

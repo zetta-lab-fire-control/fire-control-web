@@ -17,7 +17,22 @@ http.interceptors.request.use((config) => {
 http.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message = error.response?.data?.detail ?? error.message ?? 'Erro desconhecido na comunicação com a API.'
+    const raw = error.response?.data?.detail
+
+    // FastAPI retorna detail como array de objetos em erros 422 (validação)
+    // Ex: [{ loc: ['body', 'email'], msg: 'value is not a valid email address', type: '...' }]
+    let message
+    if (Array.isArray(raw)) {
+      message = raw
+        .map((e) => {
+          const field = e.loc?.slice(1).join('.') ?? ''
+          return field ? `${field}: ${e.msg}` : e.msg
+        })
+        .join(' | ')
+    } else {
+      message = raw ?? error.message ?? 'Erro desconhecido na comunicação com a API.'
+    }
+
     const enriched = new Error(message)
     // Preserva o status HTTP original para que helpers de detecção de role possam lê-lo
     enriched.status = error.response?.status ?? 0
@@ -25,6 +40,7 @@ http.interceptors.response.use(
     return Promise.reject(enriched)
   },
 )
+
 
 
 export const authApi = {
