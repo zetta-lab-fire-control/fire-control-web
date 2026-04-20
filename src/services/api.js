@@ -18,9 +18,14 @@ http.interceptors.response.use(
   (response) => response,
   (error) => {
     const message = error.response?.data?.detail ?? error.message ?? 'Erro desconhecido na comunicação com a API.'
-    return Promise.reject(new Error(message))
+    const enriched = new Error(message)
+    // Preserva o status HTTP original para que helpers de detecção de role possam lê-lo
+    enriched.status = error.response?.status ?? 0
+    enriched.response = error.response
+    return Promise.reject(enriched)
   },
 )
+
 
 export const authApi = {
   login: (credentials) => {
@@ -51,10 +56,16 @@ export const occurrenceApi = {
     }).then((r) => r.data),
 }
 
+export const userApi = {
+  /** Cadastro público de usuário comum — POST /users (sem autenticação) */
+  create: (data) => http.post('/users', data).then((r) => r.data),
+}
+
 export const reportApi = {
   create: (reportData, mediaList = []) =>
     http.post('/reports', { report: reportData, media: mediaList }).then((r) => r.data),
 }
+
 
 export const mediaApi = {
   create: (mediaData) => http.post('/media', mediaData).then((r) => r.data),
@@ -62,3 +73,53 @@ export const mediaApi = {
   uploadToStorage: (uploadUrl, file) =>
     axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } }),
 }
+
+export const adminApi = {
+  /**
+   * Lista usuários — endpoint restrito a admins (GET /users).
+   * Passamos token explicitamente para permitir uso antes de setar no interceptor.
+   */
+  listUsers: (limit = 20, token = null) => {
+    const config = { params: { limit } }
+    if (token) config.headers = { Authorization: `Bearer ${token}` }
+    return http.get('/users', config).then((r) => r.data)
+  },
+
+  /**
+   * Sonda se o usuário tem permissão de bombeiro.
+   * PUT /occurrences/{dummy-id} com body vazio:
+   *   - 403 → usuário comum (sem permissão)
+   *   - 404 | 422 → bombeiro (tem permissão, mas ID inválido ou body ruim)
+   * Retorna o status HTTP bruto para análise.
+   */
+  probeFirefighter: async (token) => {
+    try {
+      await http.put(
+        '/occurrences/00000000-0000-0000-0000-000000000000',
+        { status: 'EM_ANALISE' },
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      // 200 inesperado — assume firefighter
+      return true
+    } catch (err) {
+      // Axios transforma em erro; precisamos do status code original
+      const status = err?.cause?.status ?? err?.response?.status ?? 0
+      // 403 = sem permissão = user comum
+      // 404 = ID não existe, mas teve permissão = firefighter
+      // 422 = body inválido, mas teve permissão = firefighter
+      return status !== 403
+    }
+  },
+
+  getUserById: (id) => http.get(`/users/${id}`).then((r) => r.data),
+
+  /** Cria conta de bombeiro — POST /firefighters (admin-only) */
+  createFirefighter: (data) => http.post('/firefighters', data).then((r) => r.data),
+
+  /** Atualiza dados de um usuário — PUT /users/{id} (admin ou owner) */
+  updateUser: (id, data) => http.put(`/users/${id}`, data).then((r) => r.data),
+
+  /** Deleta um usuário — DELETE /users/{id} (admin-only) */
+  deleteUser: (id) => http.delete(`/users/${id}`).then((r) => r.data),
+}
+
