@@ -4,31 +4,86 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+
 * {
   box-sizing: border-box;
 }
 
+/* ─── Body ───────────────────────────────────────────────────────────────── */
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: #18181b; /* Tom zinc mais claro ao invés de puro preto */
+  background-color: #09090b; /* zinc-950 */
   background-image:
-    radial-gradient(ellipse at top right, rgba(249, 115, 22, 0.15), transparent 45%),
-    radial-gradient(ellipse at bottom left, rgba(239, 68, 68, 0.10), transparent 45%);
+    radial-gradient(ellipse at top right, rgba(249, 115, 22, 0.12), transparent 45%),
+    radial-gradient(ellipse at bottom left, rgba(239, 68, 68, 0.08), transparent 45%);
   background-attachment: fixed;
 }
+
+/* ─── Typography ─────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4 {
+  font-family: 'Outfit', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Scrollbar (dark) ───────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.08); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* ─── Glassmorphism utilities ────────────────────────────────────────────── */
+
+.glass-card {
+  background: rgba(24, 24, 27, 0.40);  /* zinc-900/40 */
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.glass-card-hover {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.glass-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.floating-card {
+  background: rgba(24, 24, 27, 0.70);
+  backdrop-filter: blur(32px) saturate(130%);
+  -webkit-backdrop-filter: blur(32px) saturate(130%);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Leaflet container ──────────────────────────────────────────────────── */
 
 .leaflet-container {
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-h1,
-h2,
-h3,
-h4 {
-  font-family: 'Outfit', system-ui, sans-serif;
-  letter-spacing: -0.01em;
+/* Dark mode para tiles do mapa */
+.leaflet-tile {
+  filter: invert(100%) hue-rotate(180deg) brightness(90%) contrast(88%) saturate(0.85);
 }
+
+/* Mantém popups e controles sem o filtro */
+.leaflet-tile-pane {
+  isolation: isolate;
+}
+
+/* ─── Marcadores do mapa ─────────────────────────────────────────────────── */
 
 .custom-fire-icon {
   background: transparent;
@@ -41,9 +96,9 @@ h4 {
   height: 16px;
   width: 16px;
   border-radius: 999px;
-  border: 2px solid #fff;
+  border: 2px solid rgba(255,255,255,0.9);
   background: var(--marker-color);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4);
 }
 
 .marker-core.pulse::after {
@@ -56,16 +111,7 @@ h4 {
 }
 
 @keyframes fire-pulse {
-  0% {
-    opacity: 0.95;
-    transform: scale(0.8);
-  }
-  70% {
-    opacity: 0;
-    transform: scale(1.7);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.7);
-  }
+  0%   { opacity: 0.95; transform: scale(0.8); }
+  70%  { opacity: 0;    transform: scale(1.7); }
+  100% { opacity: 0;    transform: scale(1.7); }
 }
