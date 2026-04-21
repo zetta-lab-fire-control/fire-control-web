@@ -7,8 +7,22 @@ import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Loader2, MapPin } from 'lucide-react'
 import { reportApi, mediaApi } from '../services/api.js'
 import { intensityToApi } from '../services/occurrenceAdapter.js'
-import { reportValidationRules } from '../data/mockOccurrences.js'
+import { northMinasCenter, reportValidationRules } from '../data/mockOccurrences.js'
 import { useAuthContext } from '../contexts/AuthContext.jsx'
+import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+
+/** Componente interno para capturar clique no mapa e posicionar marcador */
+function MapClickMarker({ lat, lng, onSelect }) {
+  useMapEvents({
+    click(e) {
+      onSelect(e.latlng.lat, e.latlng.lng)
+    },
+  })
+
+  return lat && lng ? <Marker position={[lat, lng]} /> : null
+}
 
 
 
@@ -177,6 +191,33 @@ export default function ReportPage() {
                 }}
               />
             </div>
+
+            {/* Mapa para seleção manual (Vantagem Épico 2) */}
+            <div className="mt-2 h-64 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-inner">
+              <MapContainer 
+                center={northMinasCenter} 
+                zoom={6} 
+                className="h-full w-full"
+              >
+                <TileLayer
+                  attribution="&copy; OpenStreetMap contributors"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapClickMarker 
+                  lat={lat} 
+                  lng={lng} 
+                  onSelect={(newLat, newLng) => {
+                    setLat(newLat.toFixed(6))
+                    setLng(newLng.toFixed(6))
+                    setLocationText(`Lat ${newLat.toFixed(5)} | Lng ${newLng.toFixed(5)}`)
+                  }} 
+                />
+              </MapContainer>
+            </div>
+            <p className="text-[10px] text-zinc-500 mt-1 italic">
+              Dica: Você pode clicar no mapa acima para selecionar a localização exata do foco.
+            </p>
+
             {lat && lng && (
               <p className="text-xs text-zinc-500">
                 Coordenadas: {parseFloat(lat).toFixed(5)}, {parseFloat(lng).toFixed(5)}
