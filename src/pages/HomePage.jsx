@@ -12,7 +12,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import { Clock3, Filter, Flame, ImageOff, Loader2, MapPin } from 'lucide-react'
+import { Clock3, Filter, Flame, ImageOff, Loader2, MapPin, RefreshCw, WifiOff } from 'lucide-react'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
@@ -69,7 +69,7 @@ export default function HomePage() {
   const [publicStats, setPublicStats] = useState(null)
 
   // Busca dados de ocorrências da API (ou mock como fallback)
-  const { data: occurrences, loading } = useOccurrences()
+  const { data: occurrences, loading, isUsingMock, refetch } = useOccurrences()
 
   // Busca indicadores públicos da API separadamente para os StatCards
   useEffect(() => {
@@ -127,43 +127,73 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
-      <section className="mb-6 rounded-3xl border border-orange-500/20 bg-gradient-to-r from-amber-950 via-zinc-950 to-emerald-950 p-6 text-white">
-        <p className="text-xs uppercase tracking-[0.25em] text-orange-200/80">
-          UAI - ALERTA DE UNIDADE DE INCÊNDIO
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold md:text-4xl">
-          Mapa de risco de incêndios — Norte de Minas
-        </h1>
-        <p className="mt-2 max-w-3xl text-sm text-orange-100/85">
-          A comunidade reporta sinais de fumaça e focos. O sistema agrupa alertas, mostra risco
-          regional e facilita ação rápida dos brigadistas e do Corpo de Bombeiros.
-        </p>
+      {/* Aviso de Modo Offline / Mock */}
+      {isUsingMock && (
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-red-500/50 bg-red-500/10 px-5 py-4 text-red-100 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+          <div className="flex items-center gap-4">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/20 text-red-400">
+              <WifiOff size={20} />
+            </span>
+            <div>
+              <p className="font-bold text-base">Atenção: Sistema Operando com DADOS MOCK (Simulação)</p>
+              <p className="text-sm text-red-200/70">A API principal não respondeu. As informações abaixo não são reais e servem apenas para demonstração.</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => refetch()}
+            className="flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-bold text-white hover:bg-red-400 transition-all shadow-lg active:scale-95"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            Tentar Reconectar
+          </button>
+        </div>
+      )}
+
+      <section className="mb-6 rounded-3xl border border-orange-500/20 bg-gradient-to-r from-amber-950 via-zinc-950 to-emerald-950 p-6 text-white overflow-hidden relative">
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`h-2 w-2 rounded-full ${loading ? 'bg-zinc-500 animate-pulse' : (isUsingMock ? 'bg-amber-500' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]')}`} />
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-orange-200/80">
+              {loading ? 'Sincronizando...' : (isUsingMock ? 'UAI - MODO DE SIMULAÇÃO (DADOS MOCK)' : 'UAI - Monitoramento em tempo real')}
+            </p>
+          </div>
+          <h1 className="text-3xl font-semibold md:text-4xl">
+            Mapa de risco de incêndios — Norte de Minas
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm text-orange-100/85">
+            A comunidade reporta sinais de fumaça e focos. O sistema agrupa alertas, mostra risco
+            regional e facilita ação rápida dos brigadistas e do Corpo de Bombeiros.
+          </p>
+        </div>
+        
+        {/* Efeito visual decorativo */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 blur-[100px] -mr-32 -mt-32" />
       </section>
 
       {/* StatCards */}
       <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Focos ativos hoje"
-          value={loading ? '—' : stats.activeToday}
+          value={loading && !occurrences.length ? '...' : stats.activeToday}
           note="Número de focos registrados"
           tone="red"
         />
         <StatCard
           title="Municípios afetados"
-          value={loading ? '—' : stats.affectedCities}
+          value={loading && !occurrences.length ? '...' : stats.affectedCities}
           note="Cidades com pelo menos uma ocorrência"
           tone="amber"
         />
         <StatCard
           title="Nível de risco da região"
-          value={loading ? '—' : stats.risk.label}
+          value={loading && !occurrences.length ? '...' : stats.risk.label}
           note="Baseado na quantidade de focos ativos"
           tone={stats.risk?.tone ?? 'emerald'}
         />
         <StatCard
           title="Última atualização"
           value={
-            loading ? '—' : stats.lastUpdate ? formatDateTime(stats.lastUpdate) : 'Sem dados'
+            loading && !occurrences.length ? '...' : stats.lastUpdate ? formatDateTime(stats.lastUpdate) : 'Sem dados'
           }
           note="Horário da última atualização no sistema"
           tone="emerald"
@@ -171,8 +201,8 @@ export default function HomePage() {
       </section>
 
       {/* Filtros */}
-      <section className="mb-6 grid gap-3 rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-4 md:grid-cols-4">
-        <label className="grid gap-2 text-sm text-zinc-200">
+      <section className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-4">
+        <label className="grid flex-1 min-w-[140px] gap-2 text-sm text-zinc-200">
           <span className="inline-flex items-center gap-2 text-zinc-400">
             <Filter size={14} /> Período
           </span>
@@ -180,7 +210,7 @@ export default function HomePage() {
             id="filtro-periodo"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2"
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500/50 outline-none"
           >
             {periodOptions.map((item) => (
               <option key={item.value} value={item.value}>
@@ -190,7 +220,7 @@ export default function HomePage() {
           </select>
         </label>
 
-        <label className="grid gap-2 text-sm text-zinc-200">
+        <label className="grid flex-2 min-w-[180px] gap-2 text-sm text-zinc-200">
           <span className="inline-flex items-center gap-2 text-zinc-400">
             <MapPin size={14} /> Cidade
           </span>
@@ -198,12 +228,12 @@ export default function HomePage() {
             id="filtro-cidade"
             value={cityQuery}
             onChange={(e) => setCityQuery(e.target.value)}
-            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2"
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500/50 outline-none"
             placeholder="Pesquisar município"
           />
         </label>
 
-        <label className="grid gap-2 text-sm text-zinc-200 md:col-span-2">
+        <label className="grid flex-2 min-w-[200px] gap-2 text-sm text-zinc-200">
           <span className="inline-flex items-center gap-2 text-zinc-400">
             <Flame size={14} /> Intensidade do foco
           </span>
@@ -211,7 +241,7 @@ export default function HomePage() {
             id="filtro-intensidade"
             value={intensity}
             onChange={(e) => setIntensity(e.target.value)}
-            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2"
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500/50 outline-none"
           >
             {intensityFilterOptions.map((item) => (
               <option key={item} value={item}>
@@ -220,13 +250,32 @@ export default function HomePage() {
             ))}
           </select>
         </label>
+
+        <button
+          onClick={() => refetch()}
+          disabled={loading}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-all disabled:opacity-50"
+          title="Recarregar dados"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="18" height="18" 
+            viewBox="0 0 24 24" fill="none" 
+            stroke="currentColor" strokeWidth="2" 
+            strokeLinecap="round" strokeLinejoin="round"
+            className={loading ? 'animate-spin' : ''}
+          >
+            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+          </svg>
+        </button>
       </section>
 
-      {/* Loading */}
-      {loading && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-zinc-400">
-          <Loader2 size={16} className="animate-spin" />
-          Carregando ocorrências...
+      {/* Loading Overlay (opcional) */}
+      {loading && occurrences.length === 0 && (
+        <div className="mb-6 flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-zinc-900/50 p-12 text-center">
+          <Loader2 size={32} className="animate-spin text-orange-500 mb-4" />
+          <p className="text-zinc-300 font-medium">Buscando informações satelitais...</p>
+          <p className="text-xs text-zinc-500 mt-1">Isso pode levar alguns segundos dependendo da sua conexão.</p>
         </div>
       )}
 

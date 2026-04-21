@@ -50,49 +50,49 @@ export function adaptOccurrence(apiOccurrence) {
   const { id, location, intensity, status, city, created_at, resolved_at, reports = [] } =
     apiOccurrence
 
-  // Extrai lat/lng do objeto de localização da API
-  const lat = location?.latitude ?? 0
-  const lng = location?.longitude ?? 0
+  // Extrai lat/lng do objeto de localização da API (aceita múltiplos formatos)
+  const lat = parseFloat(location?.latitude ?? location?.lat ?? 0)
+  const lng = parseFloat(location?.longitude ?? location?.lng ?? 0)
 
   // Coleta URLs de fotos das denúncias vinculadas
   const photos = reports
-    .map((r) => r.photo_url)
+    .map((r) => r.photo_url || r.photo)
     .filter(Boolean)
 
   return {
-    id,
+    id: String(id),
     lat,
     lng,
     city: city ?? 'Localização desconhecida',
-    district: '', // API não retorna distrito — mantido vazio
+    district: '', 
     intensity: intensityFromApi[intensity] ?? 'BAIXA',
     status: statusFromApi[status] ?? 'EM_ANALISE',
-    reportsCount: reports.length,
+    reportsCount: reports.length || apiOccurrence.reports_count || 0,
     createdAt: created_at,
     updatedAt: resolved_at ?? created_at,
     photos,
 
-    // Lista de denúncias vinculadas (para exibição no painel)
+    // Lista de denúncias vinculadas
     reports: reports.map((r) => ({
-      id: r.id,
+      id: String(r.id),
       createdAt: r.created_at,
-      intensity: intensityFromApi[r.intensity_perceived] ?? 'BAIXA',
-      photo: r.photo_url ?? null,
+      intensity: intensityFromApi[r.intensity_perceived || r.intensity] ?? 'BAIXA',
+      photo: r.photo_url || r.photo || null,
     })),
   }
 }
 
 export function adaptOccurrenceList(apiList = []) {
-  return apiList
+  const list = Array.isArray(apiList) ? apiList : (apiList.items ?? [])
+  
+  return list
+    .map(adaptOccurrence)
     .filter((occ) => {
       // Valida coordenadas geográficas antes de renderizar no mapa
-      const lat = occ.location?.latitude
-      const lng = occ.location?.longitude
-      const latValido = typeof lat === 'number' && lat >= -90 && lat <= 90
-      const lngValido = typeof lng === 'number' && lng >= -180 && lng <= 180
+      const latValido = !isNaN(occ.lat) && occ.lat !== 0 && occ.lat >= -90 && occ.lat <= 90
+      const lngValido = !isNaN(occ.lng) && occ.lng !== 0 && occ.lng >= -180 && occ.lng <= 180
       return latValido && lngValido
     })
-    .map(adaptOccurrence)
 }
 
 export function adaptPublicIndicators(apiIndicators) {

@@ -1,16 +1,4 @@
-/**
- * Hook useOccurrences
- *
- * Busca ocorrências da API REST. Se a API estiver indisponível,
- * cai automaticamente para os dados de mock local (fallback silencioso).
- *
- * @param {object} options - Opções { filters, pollInterval }
- *   - filters: filtros opcionais { city, status, skip, limit }
- *   - pollInterval: intervalo em ms para recarregar dados (0 = desabilita)
- * @returns {{ data: object[], loading: boolean, error: string|null, refetch: Function }}
- */
-
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { occurrenceApi } from '../services/api.js'
 import { adaptOccurrenceList } from '../services/occurrenceAdapter.js'
 import { mockOccurrences } from '../data/mockOccurrences.js'
@@ -19,54 +7,76 @@ export function useOccurrences({ filters = {}, pollInterval = 60000 } = {}) {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isUsingMock, setIsUsingMock] = useState(false)
+  const abortControllerRef = useRef(null)
 
-  const fetchOccurrences = useCallback(async () => {
+  const fetchOccurrences = useCallback(async (retryCount = 0) => {
+    // Cancela a requisição anterior se ainda estiver pendente
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+
     setLoading(true)
     setError(null)
 
     try {
-      // Cache-busting: adiciona timestamp para invalidar cache de 180s do backend
       const requestFilters = {
         skip: filters.skip ?? 0,
         limit: filters.limit ?? 200,
         ...filters,
-        _t: Date.now(), // Muda cada requisição, por isso backend vê cache miss
+        _t: Date.now(),
       }
-      const response = await occurrenceApi.list(requestFilters)
 
-      // A API retorna { items, total, skip, limit }
+      const response = await occurrenceApi.list(requestFilters, {
+        signal: abortControllerRef.current.signal,
+      })
+
       const rawList = response.items ?? response ?? []
       const adaptedList = adaptOccurrenceList(rawList).sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
+
       setData(adaptedList)
+      setIsUsingMock(false)
     } catch (err) {
-      // Fallback para mock quando a API não está disponível (ex: desenvolvimento sem Docker)
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        // Ignora erros de cancelamento (outra requisição já começou)
+        return
+      }
+
+      // Tenta novamente se for erro de rede/servidor (máximo 2 retentativas)
+      if (retryCount < 2) {
+        setTimeout(() => fetchOccurrences(retryCount + 1), 1000 * (retryCount + 1))
+        return
+      }
+
       console.warn('[useOccurrences] API indisponível, usando dados de mock:', err.message)
       setData(mockOccurrences)
-      setError(err.message ?? 'Falha ao buscar ocorrencias na API.')
+      setIsUsingMock(true)
+      setError(err.message ?? 'Falha ao buscar ocorrências na API.')
     } finally {
       setLoading(false)
     }
-  }, [JSON.stringify(filters)]) // Reexecuta quando os filtros mudarem
+  }, [JSON.stringify(filters)])
 
-  // Carrega dados inicial
   useEffect(() => {
     fetchOccurrences()
+    return () => {
+      if (abortControllerRef.current) abortControllerRef.current.abort()
+    }
   }, [fetchOccurrences])
 
-  // Polling opcional: recarrega dados periodicamente
   useEffect(() => {
     if (!pollInterval || pollInterval <= 0) return
 
     const interval = setInterval(() => {
-      // Otimização: reduz carga no servidor ignorando a aba quando estiver inativa/minimizada
-      if (document.hidden) return
+      if (document.hidden || loading) return
       fetchOccurrences()
     }, pollInterval)
 
     return () => clearInterval(interval)
-  }, [fetchOccurrences, pollInterval])
+  }, [fetchOccurrences, pollInterval, loading])
 
-  return { data, loading, error, refetch: fetchOccurrences }
+  return { data, loading, error, isUsingMock, refetch: fetchOccurrences }
 }

@@ -13,8 +13,14 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.VITE_PROXY_TARGET,
           changeOrigin: true,
-          secure: false, // Solucionador de erros de SSL/CORS
+          secure: false, // Ignora erro de certificado auto-assinado (ESSENCIAL)
+          xfwd: true,    // Adiciona headers X-Forwarded-For
           rewrite: (path) => path.replace(/^\/api/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('error', (err, _req, _res) => {
+              console.log('Erro no Proxy do Vite:', err);
+            });
+          },
         },
       },
     },

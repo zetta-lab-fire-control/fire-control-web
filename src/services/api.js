@@ -58,7 +58,7 @@ export const authApi = {
 }
 
 export const occurrenceApi = {
-  list: (params = {}) => http.get('/occurrences', { params }).then((r) => r.data),
+  list: (params = {}, config = {}) => http.get('/occurrences', { params, ...config }).then((r) => r.data),
   
   getById: (id) => http.get(`/occurrences/${id}`).then((r) => r.data),
   
