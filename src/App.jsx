@@ -9,6 +9,7 @@ import RegisterPage from './pages/RegisterPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
+import DebugPage from './pages/DebugPage.jsx'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/historico" element={<HistoryPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/cadastro" element={<RegisterPage />} />
+            <Route path="/debug" element={<DebugPage />} />
 
             {/* /reportar — requer login (qualquer role) */}
             {/* Usuário não logado é redirecionado para /login */}

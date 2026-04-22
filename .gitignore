@@ -38,3 +38,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+src/pages/DebugPage.jsx
+test_report.json
