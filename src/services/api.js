@@ -78,8 +78,17 @@ export const userApi = {
 }
 
 export const reportApi = {
+  /**
+   * POST /reports — FastAPI espera ReportRequestSchema como body JSON
+   * e media como query param separado (lista de IDs).
+   * Enviamos o reportData diretamente (flat), sem wrapper { report, media }.
+   */
   create: (reportData, mediaList = []) =>
-    http.post('/reports', { report: reportData, media: mediaList }).then((r) => r.data),
+    http
+      .post('/reports', reportData, {
+        params: { media: mediaList.map((m) => m.id) },
+      })
+      .then((r) => r.data),
 }
 
 
@@ -112,18 +121,22 @@ export const adminApi = {
     try {
       await http.put(
         '/occurrences/00000000-0000-0000-0000-000000000000',
-        { status: 'EM_ANALISE' },
+        // Usa um valor válido do enum da API para evitar 422 por valor inválido.
+        // O objetivo é apenas checar se o usuário tem permissão (não 403):
+        //   403 → user comum (sem permissão de bombeiro)
+        //   404 → bombeiro (ID não existe, mas autorizou)
+        { status: 'pending_confirmation' },
         { headers: { Authorization: `Bearer ${token}` } },
       )
-      // 200 inesperado — assume firefighter
+      // 200 inesperado (ID existiu) — tem permissão = firefighter
       return true
     } catch (err) {
-      // Axios transforma em erro; precisamos do status code original
-      const status = err?.cause?.status ?? err?.response?.status ?? 0
+      // O interceptor do axios cria um Error customizado com .status já preenchido.
+      // Não usar err.cause.status (não existe) nem err.response.status (já foi consumido).
+      const httpStatus = err?.status ?? 0
       // 403 = sem permissão = user comum
-      // 404 = ID não existe, mas teve permissão = firefighter
-      // 422 = body inválido, mas teve permissão = firefighter
-      return status !== 403
+      // 404 = ID não existe, mas autorizou = firefighter
+      return httpStatus !== 403
     }
   },
 
