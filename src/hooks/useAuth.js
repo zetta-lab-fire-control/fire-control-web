@@ -11,8 +11,8 @@
 import { useCallback, useState } from 'react'
 import { authApi, adminApi } from '../services/api.js'
 
-const STORAGE_KEY  = 'auth_user_v2'  // v2 — invalida cache com role 'firefighter' hardcoded
-const TOKEN_KEY    = 'auth_token'
+const STORAGE_KEY = 'auth_user_v2'  // v2 — invalida cache com role 'firefighter' hardcoded
+const TOKEN_KEY = 'auth_token'
 
 
 function readStoredUser() {
@@ -61,9 +61,9 @@ async function detectRole(token) {
 export function useAuth() {
   const [user, setUser] = useState(() => readStoredUser())
 
-  const isAdmin      = user?.role === 'admin'
+  const isAdmin = user?.role === 'admin'
   const isFirefighter = user?.role === 'firefighter' || user?.role === 'admin'
-  const isUser       = user?.role === 'user' || !user?.role
+  const isUser = user?.role === 'user' || !user?.role
 
   const login = useCallback(async (email, password) => {
     const result = await authApi.login({ email, password })

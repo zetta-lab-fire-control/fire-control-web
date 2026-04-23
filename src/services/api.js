@@ -48,7 +48,7 @@ export const authApi = {
     const formData = new URLSearchParams()
     formData.append('username', credentials.email)
     formData.append('password', credentials.password)
-    
+
     return http.post('/login', formData, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     }).then((r) => r.data)
@@ -59,13 +59,13 @@ export const authApi = {
 
 export const occurrenceApi = {
   list: (params = {}, config = {}) => http.get('/occurrences', { params, ...config }).then((r) => r.data),
-  
+
   getById: (id) => http.get(`/occurrences/${id}`).then((r) => r.data),
-  
+
   updateStatus: (id, status) => http.put(`/occurrences/${id}`, { status }).then((r) => r.data),
-  
+
   getPublicIndicators: () => http.get('/occurrences/indicators/public').then((r) => r.data),
-  
+
   getHistory: (startDate, endDate) =>
     http.get('/occurrences/indicators/history', {
       params: { start_date: startDate, end_date: endDate },
@@ -78,23 +78,14 @@ export const userApi = {
 }
 
 export const reportApi = {
-  /**
-   * POST /reports — FastAPI espera ReportRequestSchema como body JSON
-   * e media como query param separado (lista de IDs).
-   * Enviamos o reportData diretamente (flat), sem wrapper { report, media }.
-   */
   create: (reportData, mediaList = []) =>
-    http
-      .post('/reports', reportData, {
-        params: { media: mediaList.map((m) => m.id) },
-      })
-      .then((r) => r.data),
+    http.post('/reports', { report: reportData, media: mediaList }).then((r) => r.data),
 }
 
 
 export const mediaApi = {
   create: (mediaData) => http.post('/media', mediaData).then((r) => r.data),
-  
+
   uploadToStorage: (uploadUrl, file) =>
     axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } }),
 }

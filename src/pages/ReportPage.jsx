@@ -1,16 +1,19 @@
 /**
  * ReportPage — Registrar Denúncia de Foco de Incêndio
+ *
+ * Campos obrigatórios: localização (lat/lng) e intensidade.
+ * O upload de foto foi removido — o MinIO não está disponível no ambiente atual.
+ * Quando o backend estiver pronto, reintegrar via mediaApi (comentado em api.js).
  */
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Loader2, MapPin } from 'lucide-react'
-import { reportApi, mediaApi } from '../services/api.js'
+import { reportApi } from '../services/api.js'
 import { intensityToApi } from '../services/occurrenceAdapter.js'
 import { northMinasCenter, reportValidationRules } from '../data/mockOccurrences.js'
 import { useAuthContext } from '../contexts/AuthContext.jsx'
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
-import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 /** Componente interno para capturar clique no mapa e posicionar marcador */
@@ -24,16 +27,12 @@ function MapClickMarker({ lat, lng, onSelect }) {
   return lat && lng ? <Marker position={[lat, lng]} /> : null
 }
 
-
-
 const intensityOptions = [
   { value: '', label: 'Selecione a intensidade' },
   { value: 'BAIXA', label: 'Baixa — fumaça leve ou odor' },
   { value: 'MEDIA', label: 'Média — chamas visíveis' },
   { value: 'ALTA', label: 'Alta — fogo intenso ou spreading' },
 ]
-
-
 
 export default function ReportPage() {
   const navigate = useNavigate()
@@ -43,20 +42,17 @@ export default function ReportPage() {
   const [locating, setLocating] = useState(false)
   const [intensity, setIntensity] = useState('')
   const [description, setDescription] = useState('')
-  const [photoFile, setPhotoFile] = useState(null)
-  
+
   const { user } = useAuthContext()
 
   const [loading, setLoading] = useState(false)
   const [submittedCode, setSubmittedCode] = useState(null)
   const [error, setError] = useState(null)
 
-  // Redireciona para dashboard após 3 segundos de denúncia criada com sucesso
+  // Redireciona para home após 3 segundos de denúncia criada com sucesso
   useEffect(() => {
     if (submittedCode) {
-      const timer = setTimeout(() => {
-        navigate('/')
-      }, 3000)
+      const timer = setTimeout(() => navigate('/'), 3000)
       return () => clearTimeout(timer)
     }
   }, [submittedCode, navigate])
@@ -88,9 +84,8 @@ export default function ReportPage() {
     setError(null)
     setSubmittedCode(null)
 
-    // Validação de campos obrigatórios
     if (!lat || !lng) {
-      setError('A localização é obrigatória. Use a detecção automática ou informe manualmente.')
+      setError('A localização é obrigatória. Use a detecção automática ou clique no mapa.')
       return
     }
     if (!intensity) {
@@ -101,26 +96,6 @@ export default function ReportPage() {
     setLoading(true)
 
     try {
-      let mediaList = []
-
-      // Etapa 1 (opcional): upload de foto via MinIO
-      if (photoFile) {
-        // Obtém URL de upload pré-assinado do backend
-        const mediaResponse = await mediaApi.create({
-          extension: photoFile.name.split('.').pop().toLowerCase(),
-          bucket: 'reports',
-          type: 'image', // tipo padrão para fotos
-          size: photoFile.size, // tamanho do arquivo em bytes
-        })
-
-        // Faz o upload direto para o MinIO com a URL pré-assinada
-        await mediaApi.uploadToStorage(mediaResponse.upload_url, photoFile)
-
-        // Guarda o ID da mídia para vincular à denúncia
-        mediaList = [mediaResponse.instance_metadata]
-      }
-
-      // Etapa 2: cria a denúncia no backend
       const reportData = {
         user_id: user?.id,
         location: {
@@ -128,10 +103,11 @@ export default function ReportPage() {
           longitude: parseFloat(lng),
         },
         intensity: intensityToApi[intensity] ?? 'low',
-        type: 'forest_fire', // tipo padrão para o escopo do projeto
+        type: 'forest_fire',
       }
 
-      const result = await reportApi.create(reportData, mediaList)
+      // Sem mídia — passa lista vazia
+      const result = await reportApi.create(reportData, [])
 
       const occurrenceId = result?.occurrence_id ?? result?.id ?? 'N/D'
       setSubmittedCode(String(occurrenceId))
@@ -141,17 +117,12 @@ export default function ReportPage() {
       setLocationText('')
       setIntensity('')
       setDescription('')
-      setPhotoFile(null)
     } catch (err) {
-      setError(
-        err.message || 'Não foi possível registrar a denúncia. Tente novamente.',
-      )
+      setError(err.message || 'Não foi possível registrar a denúncia. Tente novamente.')
     } finally {
       setLoading(false)
     }
   }
-
-
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 md:px-6">
@@ -163,6 +134,7 @@ export default function ReportPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4" noValidate>
+          {/* Localização */}
           <div className="grid gap-2 text-sm">
             <span className="text-zinc-300">Localização <span className="text-red-400">*</span></span>
             <div className="flex flex-wrap gap-2">
@@ -182,7 +154,6 @@ export default function ReportPage() {
                 value={locationText}
                 onChange={(e) => {
                   setLocationText(e.target.value)
-                  // Tenta extrair lat/lng se o usuário digitar manualmente
                   const parts = e.target.value.split(/[,|\/\s]+/).filter(Boolean)
                   if (parts.length >= 2) {
                     setLat(parts[0].replace(/[^\d.-]/g, ''))
@@ -192,30 +163,26 @@ export default function ReportPage() {
               />
             </div>
 
-            {/* Mapa para seleção manual (Vantagem Épico 2) */}
+            {/* Mapa interativo para seleção de localização */}
             <div className="mt-2 h-64 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-inner">
-              <MapContainer 
-                center={northMinasCenter} 
-                zoom={6} 
-                className="h-full w-full"
-              >
+              <MapContainer center={northMinasCenter} zoom={6} className="h-full w-full">
                 <TileLayer
                   attribution="&copy; OpenStreetMap contributors"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <MapClickMarker 
-                  lat={lat} 
-                  lng={lng} 
+                <MapClickMarker
+                  lat={lat}
+                  lng={lng}
                   onSelect={(newLat, newLng) => {
                     setLat(newLat.toFixed(6))
                     setLng(newLng.toFixed(6))
                     setLocationText(`Lat ${newLat.toFixed(5)} | Lng ${newLng.toFixed(5)}`)
-                  }} 
+                  }}
                 />
               </MapContainer>
             </div>
             <p className="text-[10px] text-zinc-500 mt-1 italic">
-              Dica: Você pode clicar no mapa acima para selecionar a localização exata do foco.
+              Dica: Clique no mapa para selecionar a localização exata do foco.
             </p>
 
             {lat && lng && (
@@ -225,6 +192,7 @@ export default function ReportPage() {
             )}
           </div>
 
+          {/* Intensidade */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">
               Intensidade percebida <span className="text-red-400">*</span>
@@ -244,22 +212,7 @@ export default function ReportPage() {
             </select>
           </label>
 
-          <label className="grid gap-2 text-sm">
-            <span className="text-zinc-300">Foto do foco (opcional)</span>
-            <input
-              id="report-foto"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-              className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 file:mr-3 file:rounded-lg file:border-0 file:bg-orange-500/20 file:px-3 file:py-1 file:text-xs file:text-orange-200"
-            />
-            {photoFile && (
-              <p className="text-xs text-zinc-500">
-                Arquivo selecionado: {photoFile.name} ({(photoFile.size / 1024).toFixed(1)} KB)
-              </p>
-            )}
-          </label>
-
+          {/* Descrição */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">Descrição adicional (opcional)</span>
             <textarea
@@ -320,7 +273,7 @@ export default function ReportPage() {
           </div>
         )}
 
-        {/* Informativo sobre validação de ocorrências */}
+        {/* Informativo sobre validação */}
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-sm text-zinc-300">
           <p className="font-semibold text-zinc-100">Como funciona a validação?</p>
           <ul className="mt-2 grid gap-1 text-zinc-400">
