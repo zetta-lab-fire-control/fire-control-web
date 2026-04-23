@@ -31,19 +31,19 @@ export const intensityToApi = {
 
 export const statusFromApi = {
   pending_confirmation: 'EM_ANALISE',
-  validated: 'VALIDADO_AUTO',
-  executing: 'EM_ATENDIMENTO',
-  resolved: 'SOLUCIONADO',
-  invalidated: 'ALERTA_FALSO',
+  validated:            'VALIDADO_AUTO',
+  executing:            'EM_ATENDIMENTO',
+  resolved:             'SOLUCIONADO',
+  invalidated:          'ALERTA_FALSO',
 }
 
 export const statusToApi = {
-  EM_ANALISE: 'pending_confirmation',
-  VALIDADO_AUTO: 'validated',
-  CONFIRMADO_BOMBEIROS: 'validated', // mapped to validated (closest valid enum)
-  EM_ATENDIMENTO: 'validated',
-  SOLUCIONADO: 'resolved',
-  ALERTA_FALSO: 'invalidated',
+  EM_ANALISE:            'pending_confirmation',
+  VALIDADO_AUTO:         'validated',
+  CONFIRMADO_BOMBEIROS:  'validated',
+  EM_ATENDIMENTO:        'validated',
+  SOLUCIONADO:           'resolved',
+  ALERTA_FALSO:          'invalidated',
 }
 
 export function adaptOccurrence(apiOccurrence) {
@@ -84,14 +84,16 @@ export function adaptOccurrence(apiOccurrence) {
 
 export function adaptOccurrenceList(apiList = []) {
   const list = Array.isArray(apiList) ? apiList : (apiList.items ?? [])
-  
+
   return list
     .map(adaptOccurrence)
     .filter((occ) => {
-      // Valida coordenadas geográficas antes de renderizar no mapa
-      const latValido = !isNaN(occ.lat) && occ.lat !== 0 && occ.lat >= -90 && occ.lat <= 90
-      const lngValido = !isNaN(occ.lng) && occ.lng !== 0 && occ.lng >= -180 && occ.lng <= 180
-      return latValido && lngValido
+      const latOk = !isNaN(occ.lat) && occ.lat !== 0
+      const lngOk = !isNaN(occ.lng) && occ.lng !== 0
+      if (!latOk || !lngOk) {
+        console.warn('[adapter] Ocorrência descartada por coordenadas inválidas:', occ.id, occ.lat, occ.lng)
+      }
+      return latOk && lngOk
     })
 }
 
