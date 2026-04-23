@@ -103,31 +103,21 @@ export const adminApi = {
 
   /**
    * Sonda se o usuário tem permissão de bombeiro.
-   * PUT /occurrences/{dummy-id} com body vazio:
+   * Chama GET /occurrences/indicators/operational, que é gated por admin-or-firefighter:
    *   - 403 → usuário comum (sem permissão)
-   *   - 404 | 422 → bombeiro (tem permissão, mas ID inválido ou body ruim)
-   * Retorna o status HTTP bruto para análise.
+   *   - 200 ou 4xx de validação → bombeiro/admin (passou da autorização)
    */
   probeFirefighter: async (token) => {
     try {
-      await http.put(
-        '/occurrences/00000000-0000-0000-0000-000000000000',
-        // Usa um valor válido do enum da API para evitar 422 por valor inválido.
-        // O objetivo é apenas checar se o usuário tem permissão (não 403):
-        //   403 → user comum (sem permissão de bombeiro)
-        //   404 → bombeiro (ID não existe, mas autorizou)
-        { status: 'pending_confirmation' },
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
-      // 200 inesperado (ID existiu) — tem permissão = firefighter
+      await http.get('/occurrences/indicators/operational', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { city: '__probe__', target_date: '2024-01-01' },
+      })
       return true
     } catch (err) {
-      // O interceptor do axios cria um Error customizado com .status já preenchido.
-      // Não usar err.cause.status (não existe) nem err.response.status (já foi consumido).
-      const httpStatus = err?.status ?? 0
-      // 403 = sem permissão = user comum
-      // 404 = ID não existe, mas autorizou = firefighter
-      return httpStatus !== 403
+      if (err?.status === 403 || err?.status === 401) return false
+      // 404/422/500 = passou da autorização, é firefighter/admin
+      return true
     }
   },
 

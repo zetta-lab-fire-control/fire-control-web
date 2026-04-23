@@ -3,15 +3,15 @@
  *
  * Estratégia de role detection (sem alterar o backend):
  *  1. POST /login → access_token (JWT contém apenas sub = user_id)
- *  2. GET /users?limit=1  → 200 = admin
- *  3. PUT /occurrences/{dummy} → 403 = user comum | 404/422 = firefighter
- *  Role é cacheada em localStorage (chave v2) para evitar roundtrips extras.
+ *  2. GET /users?limit=1 (admin-only) → 200 = admin, 403 = segue
+ *  3. GET /occurrences/indicators/operational (admin/firefighter) → 403 = user
+ *  Role é cacheada em localStorage (chave v3) para invalidar caches antigos.
  */
 
 import { useCallback, useState } from 'react'
 import { authApi, adminApi } from '../services/api.js'
 
-const STORAGE_KEY = 'auth_user_v2'  // v2 — invalida cache com role 'firefighter' hardcoded
+const STORAGE_KEY = 'auth_user_v3'  // v3 — novo probe de firefighter
 const TOKEN_KEY = 'auth_token'
 
 
@@ -27,36 +27,28 @@ function readStoredUser() {
 /**
  * Detecta a role exata do usuário recém-autenticado.
  *
- * Fluxo:
- *  1. GET /users?limit=1  → 200 = admin
- *  2. PUT /occurrences/{dummy} → 404|422 = firefighter (tem permissão mas ID ruim)
- *                              → 403      = user comum  (sem permissão)
- *
  * @param {string} token - Bearer token do usuário
  * @returns {Promise<'admin'|'firefighter'|'user'>}
  */
 async function detectRole(token) {
-  // Etapa 1 — verifica se é admin
+  // Etapa 1 — admin consegue listar usuários
   try {
     await adminApi.listUsers(1, token)
     return 'admin'
   } catch (adminErr) {
-    // Qualquer erro aqui significa "não é admin" — continua para etapa 2
     if (adminErr?.status !== 403 && adminErr?.status !== 401) {
       console.warn('[detectRole] Resposta inesperada em /users:', adminErr?.status)
     }
   }
 
-  // Etapa 2 — verifica se é bombeiro
+  // Etapa 2 — probe em endpoint admin-or-firefighter
   try {
     const isFirefighter = await adminApi.probeFirefighter(token)
     return isFirefighter ? 'firefighter' : 'user'
   } catch {
-    // Erro de rede ou outro problema — assume user por segurança
     return 'user'
   }
 }
-
 
 export function useAuth() {
   const [user, setUser] = useState(() => readStoredUser())
@@ -80,7 +72,6 @@ export function useAuth() {
       }
     }
 
-    // Detecta role via chamadas de permissão ao backend
     const role = accessToken ? await detectRole(accessToken) : 'user'
 
     const userData = {
