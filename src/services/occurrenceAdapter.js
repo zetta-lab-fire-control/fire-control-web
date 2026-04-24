@@ -15,6 +15,8 @@
  *   - Status como 'EM_ANALISE' | 'VALIDADO_AUTO' | 'SOLUCIONADO' | 'ALERTA_FALSO'
  */
 
+import { parseApiDate } from '../utils/formatters.js'
+
 export const intensityFromApi = {
   low: 'BAIXA',
   medium: 'MEDIA',
@@ -107,6 +109,6 @@ export function adaptPublicIndicators(apiIndicators) {
       label: riskLabelMap[risk_level] ?? 'Baixo',
       tone: riskToneMap[risk_level] ?? 'emerald',
     },
-    lastUpdate: last_updated ? new Date(last_updated) : null,
+    lastUpdate: parseApiDate(last_updated),
   }
 }
