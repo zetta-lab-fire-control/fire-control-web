@@ -35,14 +35,12 @@ const periodOptions = [
   { value: '30', label: 'Últimos 30 dias' },
 ]
 
-const intensityFilterOptions = ['TODOS', 'BAIXA', 'MEDIA', 'ALTA', 'CONTROLADO']
+const intensityFilterOptions = ['TODOS', 'BAIXA', 'MEDIA', 'ALTA']
 
 /** Status visíveis no mapa público */
 const statusVisibleOnMap = new Set([
   'EM_ANALISE',
   'VALIDADO_AUTO',
-  'CONFIRMADO_BOMBEIROS',
-  'EM_ATENDIMENTO',
   'SOLUCIONADO',
 ])
 

@@ -4,16 +4,13 @@ export const intensityMeta = {
   BAIXA: { label: 'Baixa', color: '#22c55e', weight: 1 },
   MEDIA: { label: 'Media', color: '#f59e0b', weight: 2 },
   ALTA: { label: 'Alta', color: '#ef4444', weight: 3 },
-  CONTROLADO: { label: 'Controlado', color: '#10b981', weight: 1 },
 }
 
 export const statusMeta = {
   EM_ANALISE: 'Em analise',
-  VALIDADO_AUTO: 'Alerta validado automaticamente',
-  CONFIRMADO_BOMBEIROS: 'Confirmado pelos bombeiros',
+  VALIDADO_AUTO: 'Alerta validado',
   ALERTA_FALSO: 'Alerta falso',
-  EM_ATENDIMENTO: 'Em atendimento pelos bombeiros',
-  SOLUCIONADO: 'Solucionado pelos bombeiros',
+  SOLUCIONADO: 'Solucionado',
 }
 
 export const reportValidationRules = {
@@ -33,7 +30,7 @@ export const mockOccurrences = [
     lat: -16.7321,
     lng: -43.8622,
     intensity: 'ALTA',
-    status: 'EM_ATENDIMENTO',
+    status: 'VALIDADO_AUTO',
     reportsCount: 99,
     createdAt: tMinus(1),
     updatedAt: tMinus(0.5),

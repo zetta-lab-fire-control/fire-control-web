@@ -6,14 +6,13 @@
  *   - IDs como UUID string
  *   - Localização como { latitude, longitude }
  *   - Intensidade como 'low' | 'medium' | 'high'
- *   - Status como 'pending_confirmation' | 'validated' | 'executing' | 'resolved' | 'invalidated'
- *   - Campos em snake_case (created_at, resolved_at…)
+ *   - Status como 'pending_confirmation' | 'validated' | 'resolved' | 'invalidated'
+ *   - Campos em snake_case (resolved_at, resolved_by)
  *
  * Os componentes esperam:
  *   - lat / lng como números
- *   - Intensidade como 'BAIXA' | 'MEDIA' | 'ALTA' | 'CONTROLADO'
- *   - Status como 'EM_ANALISE' | 'VALIDADO_AUTO' | …
- *   - reportsCount, createdAt, updatedAt em camelCase
+ *   - Intensidade como 'BAIXA' | 'MEDIA' | 'ALTA'
+ *   - Status como 'EM_ANALISE' | 'VALIDADO_AUTO' | 'SOLUCIONADO' | 'ALERTA_FALSO'
  */
 
 export const intensityFromApi = {
@@ -26,24 +25,20 @@ export const intensityToApi = {
   BAIXA: 'low',
   MEDIA: 'medium',
   ALTA: 'high',
-  CONTROLADO: 'low', // fallback — controlado não existe na API, usamos low
 }
 
 export const statusFromApi = {
   pending_confirmation: 'EM_ANALISE',
   validated:            'VALIDADO_AUTO',
-  executing:            'EM_ATENDIMENTO',
   resolved:             'SOLUCIONADO',
   invalidated:          'ALERTA_FALSO',
 }
 
 export const statusToApi = {
-  EM_ANALISE:            'pending_confirmation',
-  VALIDADO_AUTO:         'validated',
-  CONFIRMADO_BOMBEIROS:  'validated',
-  EM_ATENDIMENTO:        'validated',
-  SOLUCIONADO:           'resolved',
-  ALERTA_FALSO:          'invalidated',
+  EM_ANALISE:    'pending_confirmation',
+  VALIDADO_AUTO: 'validated',
+  SOLUCIONADO:   'resolved',
+  ALERTA_FALSO:  'invalidated',
 }
 
 export function adaptOccurrence(apiOccurrence) {

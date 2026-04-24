@@ -29,12 +29,10 @@ import { formatDateTime } from '../utils/formatters.js'
 
 // Configurações estáticas
 
-/** Statuses disponíveis para o select do painel */
+/** Statuses disponíveis para o select do painel (refletem o enum do backend) */
 const availableStatuses = [
   'EM_ANALISE',
   'VALIDADO_AUTO',
-  'CONFIRMADO_BOMBEIROS',
-  'EM_ATENDIMENTO',
   'SOLUCIONADO',
   'ALERTA_FALSO',
 ]
@@ -97,16 +95,14 @@ export default function DashboardPage() {
 
   // Indicadores do topo dos cards
   const summary = useMemo(() => {
-    const emAnalise = occurrences.filter(
-      (o) => o.status === 'EM_ANALISE' || o.status === 'VALIDADO_AUTO',
-    ).length
-    const emAtendimento = occurrences.filter((o) => o.status === 'EM_ATENDIMENTO').length
-    const controladasHoje = occurrences.filter(
+    const emAnalise = occurrences.filter((o) => o.status === 'EM_ANALISE').length
+    const validadas = occurrences.filter((o) => o.status === 'VALIDADO_AUTO').length
+    const solucionadasHoje = occurrences.filter(
       (o) =>
         o.status === 'SOLUCIONADO' &&
         new Date(o.updatedAt).toDateString() === new Date().toDateString(),
     ).length
-    return { emAnalise, emAtendimento, controladasHoje }
+    return { emAnalise, validadas, solucionadasHoje }
   }, [occurrences])
 
   // Atualização de status via API
@@ -158,15 +154,15 @@ export default function DashboardPage() {
           tone="amber"
         />
         <StatCard
-          title="Em atendimento"
-          value={loading ? '—' : summary.emAtendimento}
-          note="Equipes em deslocamento ou ação"
+          title="Validadas / em atendimento"
+          value={loading ? '—' : summary.validadas}
+          note="Confirmadas e ainda ativas"
           tone="red"
         />
         <StatCard
-          title="Controladas hoje"
-          value={loading ? '—' : summary.controladasHoje}
-          note="Encerradas pelas equipes"
+          title="Solucionadas hoje"
+          value={loading ? '—' : summary.solucionadasHoje}
+          note="Encerradas pelas equipes hoje"
           tone="emerald"
         />
       </section>
