@@ -108,6 +108,9 @@ export default function ReportPage() {
         },
         intensity: intensityToApi[intensity] ?? 'low',
         type: 'forest_fire',
+        // Backend ignora silenciosamente se o schema nao tiver o campo;
+        // assim que ele adicionar, a descricao fluira sem nova mudanca no front.
+        description: description?.trim() || undefined,
       }
 
       // Sem mídia — passa lista vazia

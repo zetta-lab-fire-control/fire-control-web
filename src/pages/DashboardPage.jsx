@@ -327,6 +327,24 @@ export default function DashboardPage() {
                 {formatDateTime(selectedOccurrence.createdAt)}
               </p>
 
+              {/* Descrição — mostra a primeira descrição preenchida pelas denúncias,
+                  ou a propria descrição da ocorrência se o backend devolver. */}
+              <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3">
+                <p className="text-zinc-400">Observações da denúncia</p>
+                {(() => {
+                  const desc =
+                    selectedOccurrence.description ||
+                    selectedOccurrence.reports.find((r) => r.description)?.description
+                  return desc ? (
+                    <p className="mt-1 whitespace-pre-wrap text-zinc-200">{desc}</p>
+                  ) : (
+                    <p className="mt-1 text-xs italic text-zinc-500">
+                      Sem observações cadastradas.
+                    </p>
+                  )
+                })()}
+              </div>
+
               {/* Select de atualização de status */}
               <label className="grid gap-2">
                 <span className="text-zinc-400">Status</span>
@@ -399,6 +417,12 @@ export default function DashboardPage() {
                       <span className="text-zinc-400">Intensidade:</span>{' '}
                       {intensityMeta[report.intensity]?.label}
                     </p>
+                    {report.description && (
+                      <p className="mt-1 whitespace-pre-wrap text-zinc-300">
+                        <span className="text-zinc-400">Observações:</span>{' '}
+                        {report.description}
+                      </p>
+                    )}
                   </article>
                 ))}
               </div>
