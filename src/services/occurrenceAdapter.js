@@ -51,30 +51,23 @@ export function adaptOccurrence(apiOccurrence) {
   const lat = parseFloat(location?.latitude ?? location?.lat ?? 0)
   const lng = parseFloat(location?.longitude ?? location?.lng ?? 0)
 
-  // Coleta URLs de fotos das denúncias vinculadas
-  const photos = reports
-    .map((r) => r.photo_url || r.photo)
-    .filter(Boolean)
-
   return {
     id: String(id),
     lat,
     lng,
     city: city ?? 'Localização desconhecida',
-    district: '', 
+    district: '',
     intensity: intensityFromApi[intensity] ?? 'BAIXA',
     status: statusFromApi[status] ?? 'EM_ANALISE',
     reportsCount: reports.length || apiOccurrence.reports_count || 0,
     createdAt: created_at,
     updatedAt: resolved_at ?? created_at,
-    photos,
 
-    // Lista de denúncias vinculadas
+    // Lista de denúncias vinculadas (a API publica atualmente nao traz)
     reports: reports.map((r) => ({
       id: String(r.id),
       createdAt: r.created_at,
       intensity: intensityFromApi[r.intensity_perceived || r.intensity] ?? 'BAIXA',
-      photo: r.photo_url || r.photo || null,
     })),
   }
 }

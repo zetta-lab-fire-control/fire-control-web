@@ -6,20 +6,18 @@
  *  - Marcadores pulsantes para focos de alta intensidade
  *  - Filtros por período, cidade e intensidade
  *  - Painel lateral com detalhes ao selecionar um foco
- *  - Galeria de fotos das denúncias vinculadas
  *  - Indicadores públicos (focos ativos, municípios, nível de risco)
  *  - Dados consumidos da API com fallback para mock
  */
 
 import { useMemo, useState } from 'react'
-import { Clock3, Filter, Flame, ImageOff, Loader2, MapPin, RefreshCw, WifiOff } from 'lucide-react'
+import { Clock3, Filter, Flame, Loader2, MapPin, RefreshCw, WifiOff } from 'lucide-react'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import StatCard from '../components/StatCard.jsx'
-import OccurrencePhotoGallery from '../components/OccurrencePhotoGallery.jsx'
 import { intensityMeta, northMinasCenter, statusMeta } from '../data/mockOccurrences.js'
 import { useOccurrences } from '../hooks/useOccurrences.js'
 import { occurrenceApi } from '../services/api.js'
@@ -375,19 +373,6 @@ export default function HomePage() {
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3">
                 <p className="text-zinc-400">Status da ocorrência</p>
                 <p className="font-medium">{statusMeta[selectedOccurrence.status]}</p>
-              </div>
-
-              {/* Galeria de fotos */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3">
-                <p className="mb-2 text-zinc-400">Fotos das denúncias</p>
-                {selectedOccurrence.photos?.length > 0 ? (
-                  <OccurrencePhotoGallery photos={selectedOccurrence.photos} />
-                ) : (
-                  <div className="flex items-center gap-2 text-zinc-500">
-                    <ImageOff size={16} />
-                    <span>Nenhuma imagem disponível para esta ocorrência.</span>
-                  </div>
-                )}
               </div>
             </div>
           )}

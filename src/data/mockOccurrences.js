@@ -34,9 +34,8 @@ export const mockOccurrences = [
     reportsCount: 99,
     createdAt: tMinus(1),
     updatedAt: tMinus(0.5),
-    photos: ['https://placehold.co/600x400/orange/white?text=FOGO+SIMULADO+01'],
     reports: [
-      { id: 'DEN-MOCK-1', createdAt: tMinus(1), intensity: 'ALTA', photo: 'https://placehold.co/100x100?text=IMG1' },
+      { id: 'DEN-MOCK-1', createdAt: tMinus(1), intensity: 'ALTA' },
     ],
   },
   {
@@ -50,7 +49,6 @@ export const mockOccurrences = [
     reportsCount: 3,
     createdAt: tMinus(2),
     updatedAt: tMinus(1),
-    photos: ['https://placehold.co/600x400/amber/black?text=FOGO+SIMULADO+02'],
     reports: [],
   },
 ]

@@ -20,7 +20,6 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import StatCard from '../components/StatCard.jsx'
-import OccurrencePhotoGallery from '../components/OccurrencePhotoGallery.jsx'
 import { intensityMeta, northMinasCenter, statusMeta } from '../data/mockOccurrences.js'
 import { occurrenceApi } from '../services/api.js'
 import { statusToApi } from '../services/occurrenceAdapter.js'
@@ -400,14 +399,6 @@ export default function DashboardPage() {
                       <span className="text-zinc-400">Intensidade:</span>{' '}
                       {intensityMeta[report.intensity]?.label}
                     </p>
-                    {/* Foto da denúncia */}
-                    {report.photo ? (
-                      <div className="mt-2">
-                        <OccurrencePhotoGallery photos={[report.photo]} />
-                      </div>
-                    ) : (
-                      <p className="mt-1 text-xs text-zinc-600">Sem foto enviada.</p>
-                    )}
                   </article>
                 ))}
               </div>
