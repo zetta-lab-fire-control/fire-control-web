@@ -44,12 +44,21 @@ export const statusToApi = {
 }
 
 export function adaptOccurrence(apiOccurrence) {
-  const { id, location, intensity, status, city, created_at, resolved_at, reports = [] } =
+  const { id, location, intensity, status, city, created_at, resolved_at, description, reports = [] } =
     apiOccurrence
 
   // Extrai lat/lng do objeto de localização da API (aceita múltiplos formatos)
   const lat = parseFloat(location?.latitude ?? location?.lat ?? 0)
   const lng = parseFloat(location?.longitude ?? location?.lng ?? 0)
+
+  // OccurrenceReadSchema do backend ainda nao expoe created_at/updated_at.
+  // Sem fallback, new Date(undefined) vira Invalid Date e o filtro temporal
+  // do HomePage descarta todas as ocorrencias. Ate o backend adicionar o
+  // campo, usamos "agora" para que o ponto aparecca pelo menos no filtro
+  // "hoje".
+  const fallbackNow = new Date().toISOString()
+  const createdAt = created_at ?? fallbackNow
+  const updatedAt = resolved_at ?? created_at ?? fallbackNow
 
   return {
     id: String(id),
@@ -60,14 +69,16 @@ export function adaptOccurrence(apiOccurrence) {
     intensity: intensityFromApi[intensity] ?? 'BAIXA',
     status: statusFromApi[status] ?? 'EM_ANALISE',
     reportsCount: reports.length || apiOccurrence.reports_count || 0,
-    createdAt: created_at,
-    updatedAt: resolved_at ?? created_at,
+    createdAt,
+    updatedAt,
+    description: description ?? null,
 
     // Lista de denúncias vinculadas (a API publica atualmente nao traz)
     reports: reports.map((r) => ({
       id: String(r.id),
       createdAt: r.created_at,
       intensity: intensityFromApi[r.intensity_perceived || r.intensity] ?? 'BAIXA',
+      description: r.description ?? null,
     })),
   }
 }
