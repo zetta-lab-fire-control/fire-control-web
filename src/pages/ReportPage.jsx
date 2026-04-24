@@ -92,12 +92,16 @@ export default function ReportPage() {
       setError('Selecione a intensidade percebida do foco.')
       return
     }
+    if (!user?.id) {
+      setError('Sessão expirada. Faça login novamente para enviar a denúncia.')
+      return
+    }
 
     setLoading(true)
 
     try {
       const reportData = {
-        user_id: user?.id,
+        user_id: user.id,
         location: {
           latitude: parseFloat(lat),
           longitude: parseFloat(lng),
