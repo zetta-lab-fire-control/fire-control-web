@@ -1,15 +1,4 @@
-/**
- * Navbar — Floating Island premium com role badge e link /admin
- *
- * Comportamento:
- *  - Floating island: sticky mx-4 mt-3 rounded-2xl glassmorphism
- *  - Role badge colorido (admin=orange, firefighter=blue, user=zinc)
- *  - Link "Painel" para bombeiros e admins
- *  - Link "Admin" apenas para admins
- *  - Animação de hover nos links
- */
-
-import { Flame, LogIn, Home, History, Megaphone, LogOut, ShieldCheck, Crown, UserPlus } from 'lucide-react'
+import { LogIn, Home, History, Megaphone, LogOut, ShieldCheck, Crown, UserPlus } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../contexts/AuthContext.jsx'
 
@@ -38,6 +27,12 @@ function RoleBadge({ role }) {
   )
 }
 
+function UaiLogo() {
+  return (
+    <img src="/logo.jpeg" alt="UAI" className="h-8 w-8 rounded-xl object-cover" />
+  )
+}
+
 export default function Navbar() {
   const navigate = useNavigate()
   const { user, isAdmin, isFirefighter, logout } = useAuthContext()
@@ -48,21 +43,16 @@ export default function Navbar() {
   }
 
   return (
-    /* Floating island */
     <header className="sticky top-3 z-50 mx-3 md:mx-4">
       <nav className="flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-900/70 px-4 py-2.5 backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.5)] md:px-6">
-        {/* Logo */}
         <Link to="/" className="inline-flex items-center gap-2 text-white">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-600 shadow-[0_0_16px_rgba(249,115,22,0.4)]">
-            <Flame size={17} />
-          </span>
+          <UaiLogo />
           <div className="text-left leading-tight">
             <p className="text-[10px] uppercase tracking-widest text-orange-300/80">UAI</p>
             <p className="text-sm font-semibold leading-none">Alerta de Incêndio</p>
           </div>
         </Link>
 
-        {/* Links de navegação */}
         <div className="flex flex-wrap items-center justify-end gap-0.5">
           <NavLink to="/" end className={linkClass}>
             <Home size={15} />
@@ -79,7 +69,6 @@ export default function Navbar() {
             <span className="hidden sm:inline">Reportar</span>
           </NavLink>
 
-          {/* Painel — bombeiros e admins */}
           {isFirefighter && (
             <NavLink to="/painel" className={linkClass}>
               <ShieldCheck size={15} />
@@ -87,7 +76,6 @@ export default function Navbar() {
             </NavLink>
           )}
 
-          {/* Admin — apenas admins */}
           {isAdmin && (
             <NavLink to="/admin" className={linkClass}>
               <Crown size={15} />
@@ -95,7 +83,6 @@ export default function Navbar() {
             </NavLink>
           )}
 
-          {/* Área de autenticação */}
           {user ? (
             <div className="ml-2 flex items-center gap-2 border-l border-white/10 pl-3">
               <RoleBadge role={user.role} />
@@ -125,7 +112,6 @@ export default function Navbar() {
               </NavLink>
             </>
           )}
-
         </div>
       </nav>
     </header>

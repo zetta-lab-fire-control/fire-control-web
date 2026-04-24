@@ -1,29 +1,19 @@
-/**
- * ReportPage — Registrar Denúncia de Foco de Incêndio
- *
- * Campos obrigatórios: localização (lat/lng) e intensidade.
- * O upload de foto foi removido — o MinIO não está disponível no ambiente atual.
- * Quando o backend estiver pronto, reintegrar via mediaApi (comentado em api.js).
- */
-
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle, Loader2, MapPin } from 'lucide-react'
 import { reportApi } from '../services/api.js'
 import { intensityToApi } from '../services/occurrenceAdapter.js'
-import { northMinasCenter, reportValidationRules } from '../data/mockOccurrences.js'
+import { northMinasCenter, northMinasBounds, reportValidationRules } from '../data/mockOccurrences.js'
 import { useAuthContext } from '../contexts/AuthContext.jsx'
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
-/** Componente interno para capturar clique no mapa e posicionar marcador */
 function MapClickMarker({ lat, lng, onSelect }) {
   useMapEvents({
     click(e) {
       onSelect(e.latlng.lat, e.latlng.lng)
     },
   })
-
   return lat && lng ? <Marker position={[lat, lng]} /> : null
 }
 
@@ -31,8 +21,13 @@ const intensityOptions = [
   { value: '', label: 'Selecione a intensidade' },
   { value: 'BAIXA', label: 'Baixa — fumaça leve ou odor' },
   { value: 'MEDIA', label: 'Média — chamas visíveis' },
-  { value: 'ALTA', label: 'Alta — fogo intenso ou spreading' },
+  { value: 'ALTA',  label: 'Alta — fogo intenso e em expansão' },
 ]
+
+function isInsideNordeMinas(lat, lng) {
+  const { minLat, maxLat, minLon, maxLon } = northMinasBounds
+  return lat >= minLat && lat <= maxLat && lng >= minLon && lng <= maxLon
+}
 
 export default function ReportPage() {
   const navigate = useNavigate()
@@ -49,7 +44,6 @@ export default function ReportPage() {
   const [submittedCode, setSubmittedCode] = useState(null)
   const [error, setError] = useState(null)
 
-  // Redireciona para home após 3 segundos de denúncia criada com sucesso
   useEffect(() => {
     if (submittedCode) {
       const timer = setTimeout(() => navigate('/'), 3000)
@@ -66,9 +60,10 @@ export default function ReportPage() {
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
-        setLat(coords.latitude.toFixed(6))
-        setLng(coords.longitude.toFixed(6))
-        setLocationText(`Lat ${coords.latitude.toFixed(5)} | Lng ${coords.longitude.toFixed(5)}`)
+        const { latitude, longitude } = coords
+        setLat(latitude.toFixed(6))
+        setLng(longitude.toFixed(6))
+        setLocationText(`Lat ${latitude.toFixed(5)} | Lng ${longitude.toFixed(5)}`)
         setLocating(false)
       },
       () => {
@@ -77,6 +72,17 @@ export default function ReportPage() {
       },
       { enableHighAccuracy: true, timeout: 8000 },
     )
+  }
+
+  const handleMapSelect = (newLat, newLng) => {
+    if (!isInsideNordeMinas(newLat, newLng)) {
+      setError('Localização fora do Norte de Minas Gerais. Selecione um ponto dentro da região atendida.')
+      return
+    }
+    setError(null)
+    setLat(newLat.toFixed(6))
+    setLng(newLng.toFixed(6))
+    setLocationText(`Lat ${newLat.toFixed(5)} | Lng ${newLng.toFixed(5)}`)
   }
 
   const handleSubmit = async (e) => {
@@ -88,6 +94,15 @@ export default function ReportPage() {
       setError('A localização é obrigatória. Use a detecção automática ou clique no mapa.')
       return
     }
+
+    const parsedLat = parseFloat(lat)
+    const parsedLng = parseFloat(lng)
+
+    if (!isInsideNordeMinas(parsedLat, parsedLng)) {
+      setError('As coordenadas estão fora do Norte de Minas Gerais. Apenas denúncias nessa região são aceitas.')
+      return
+    }
+
     if (!intensity) {
       setError('Selecione a intensidade percebida do foco.')
       return
@@ -102,18 +117,12 @@ export default function ReportPage() {
     try {
       const reportData = {
         user_id: user.id,
-        location: {
-          latitude: parseFloat(lat),
-          longitude: parseFloat(lng),
-        },
+        location: { latitude: parsedLat, longitude: parsedLng },
         intensity: intensityToApi[intensity] ?? 'low',
         type: 'forest_fire',
-        // Backend ignora silenciosamente se o schema nao tiver o campo;
-        // assim que ele adicionar, a descricao fluira sem nova mudanca no front.
         description: description?.trim() || undefined,
       }
 
-      // Sem mídia — passa lista vazia
       const result = await reportApi.create(reportData, [])
 
       const occurrenceId = result?.occurrence_id ?? result?.id ?? 'N/D'
@@ -136,12 +145,11 @@ export default function ReportPage() {
       <section className="rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-6 text-zinc-100">
         <h1 className="text-2xl font-semibold">Reportar foco de incêndio</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Envie uma denúncia para acionar alerta comunitário e apoiar resposta rápida dos
-          bombeiros.
+          Envie uma denúncia para acionar alerta comunitário e apoiar resposta rápida dos bombeiros.
+          Apenas denúncias no Norte de Minas Gerais são aceitas.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 grid gap-4" noValidate>
-          {/* Localização */}
           <div className="grid gap-2 text-sm">
             <span className="text-zinc-300">Localização <span className="text-red-400">*</span></span>
             <div className="flex flex-wrap gap-2">
@@ -155,7 +163,6 @@ export default function ReportPage() {
                 {locating ? 'Detectando...' : 'Detectar automaticamente'}
               </button>
               <input
-                id="report-localizacao"
                 className="min-w-[220px] flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 placeholder-zinc-600"
                 placeholder="Latitude / Longitude"
                 value={locationText}
@@ -170,26 +177,17 @@ export default function ReportPage() {
               />
             </div>
 
-            {/* Mapa interativo para seleção de localização */}
             <div className="mt-2 h-64 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-inner">
               <MapContainer center={northMinasCenter} zoom={6} className="h-full w-full">
                 <TileLayer
                   attribution="&copy; OpenStreetMap contributors"
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <MapClickMarker
-                  lat={lat}
-                  lng={lng}
-                  onSelect={(newLat, newLng) => {
-                    setLat(newLat.toFixed(6))
-                    setLng(newLng.toFixed(6))
-                    setLocationText(`Lat ${newLat.toFixed(5)} | Lng ${newLng.toFixed(5)}`)
-                  }}
-                />
+                <MapClickMarker lat={lat} lng={lng} onSelect={handleMapSelect} />
               </MapContainer>
             </div>
             <p className="text-[10px] text-zinc-500 mt-1 italic">
-              Dica: Clique no mapa para selecionar a localização exata do foco.
+              Clique no mapa para selecionar a localização exata do foco. Apenas o Norte de Minas é aceito.
             </p>
 
             {lat && lng && (
@@ -199,13 +197,11 @@ export default function ReportPage() {
             )}
           </div>
 
-          {/* Intensidade */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">
               Intensidade percebida <span className="text-red-400">*</span>
             </span>
             <select
-              id="report-intensidade"
               value={intensity}
               onChange={(e) => setIntensity(e.target.value)}
               className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2"
@@ -219,11 +215,9 @@ export default function ReportPage() {
             </select>
           </label>
 
-          {/* Descrição */}
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">Descrição adicional (opcional)</span>
             <textarea
-              id="report-descricao"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -232,34 +226,25 @@ export default function ReportPage() {
             />
           </label>
 
-          {/* Mensagem de erro */}
           {error && (
-            <div
-              role="alert"
-              className="rounded-xl border border-red-700/40 bg-red-500/10 px-3 py-2 text-sm text-red-300"
-            >
+            <div role="alert" className="rounded-xl border border-red-700/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {error}
             </div>
           )}
 
-          {/* Botão de envio */}
           <button
-            id="btn-enviar-denuncia"
             type="submit"
             disabled={loading}
             className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 font-semibold text-white hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" /> Enviando...
-              </>
+              <><Loader2 size={16} className="animate-spin" /> Enviando...</>
             ) : (
               'Enviar denúncia'
             )}
           </button>
         </form>
 
-        {/* Confirmação de sucesso */}
         {submittedCode && (
           <div className="mt-6 rounded-2xl border border-emerald-700/40 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-100">
             <div className="mb-2 flex items-center gap-2 font-semibold">
@@ -274,13 +259,11 @@ export default function ReportPage() {
             </p>
             <p className="mt-2 text-xs text-emerald-200/70">
               Você pode acompanhar a evolução da ocorrência diretamente no mapa. Caso três
-              denúncias sejam registradas na mesma área, o sistema validará automaticamente o
-              alerta.
+              denúncias sejam registradas na mesma área, o sistema validará automaticamente o alerta.
             </p>
           </div>
         )}
 
-        {/* Informativo sobre validação */}
         <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 text-sm text-zinc-300">
           <p className="font-semibold text-zinc-100">Como funciona a validação?</p>
           <ul className="mt-2 grid gap-1 text-zinc-400">
