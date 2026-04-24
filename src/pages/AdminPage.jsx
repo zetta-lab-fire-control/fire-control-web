@@ -311,41 +311,24 @@ export default function AdminPage() {
         </div>
       </section>
 
-      {/* Stat cards */}
-      <section className="mb-8 grid gap-4 sm:grid-cols-3">
-        {[
-          {
-            label: 'Total de usuários',
-            value: loading ? '—' : users.length,
-            icon: <Users size={20} />,
-            color: 'blue',
-          },
-          {
-            label: 'Bombeiros registrados',
-            value: loading ? '—' : users.filter((u) => u.role === 'firefighter').length,
-            icon: <Shield size={20} />,
-            color: 'orange',
-          },
-          {
-            label: 'Administradores',
-            value: loading ? '—' : users.filter((u) => u.role === 'admin').length,
-            icon: <UserCheck size={20} />,
-            color: 'purple',
-          },
-        ].map(({ label, value, icon, color }) => (
-          <article
-            key={label}
-            className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40 backdrop-blur-2xl p-5 shadow-xl transition-all hover:-translate-y-1 admin-stat-card--${color}`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">{label}</p>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-zinc-400">
-                {icon}
-              </span>
-            </div>
-            <p className="mt-4 text-4xl font-bold tracking-tight text-zinc-100">{value}</p>
-          </article>
-        ))}
+      {/* Stat card único (a API /users não expõe role, então evitamos contagens derivadas) */}
+      <section className="mb-8">
+        <article className="group relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40 backdrop-blur-2xl p-5 shadow-xl admin-stat-card--blue">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+              Total de usuários cadastrados
+            </p>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-zinc-400">
+              <Users size={20} />
+            </span>
+          </div>
+          <p className="mt-4 text-4xl font-bold tracking-tight text-zinc-100">
+            {loading ? '—' : users.length}
+          </p>
+          <p className="mt-2 text-xs text-zinc-500">
+            A API atual não expõe a role por usuário — use a ação de criar bombeiro para atribuir perfil.
+          </p>
+        </article>
       </section>
 
       {/* Tabela de usuários */}
@@ -452,10 +435,19 @@ function RoleBadge({ role }) {
     firefighter: 'Bombeiro',
     user:        'Usuário',
   }
+  // A API pública de /users atualmente não devolve role — mostramos "—" em vez
+  // de forjar "Usuário" como se fosse a role conhecida.
+  if (!role) {
+    return (
+      <span className="inline-flex items-center rounded-full border border-zinc-700/40 bg-zinc-800/40 px-2.5 py-0.5 text-xs font-medium text-zinc-500">
+        —
+      </span>
+    )
+  }
   const cls = map[role] ?? map.user
   return (
     <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${cls}`}>
-      {labels[role] ?? role ?? '—'}
+      {labels[role] ?? role}
     </span>
   )
 }
