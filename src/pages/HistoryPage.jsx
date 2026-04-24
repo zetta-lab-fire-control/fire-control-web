@@ -42,21 +42,33 @@ export default function HistoryPage() {
 
       try {
         const end = new Date()
+        // Empurra para o fim do dia para incluir ocorrências de hoje.
+        end.setHours(23, 59, 59, 999)
+
         const start = new Date(end)
         if (period === 'ano') {
           start.setFullYear(end.getFullYear() - 1)
         } else {
           start.setDate(end.getDate() - Number(period))
         }
+        start.setHours(0, 0, 0, 0)
 
-        const startDate = start.toISOString().split('T')[0]
-        const endDate = end.toISOString().split('T')[0]
+        // ISO completo (com timezone) — evita ambiguidade de fuso.
+        const startDate = start.toISOString()
+        const endDate = end.toISOString()
 
         const response = await occurrenceApi.getHistory(startDate, endDate)
         setHistoryData(response)
-      } catch {
-        setUsingMock(true)
-        setHistoryData({ isMock: true, periodId: period })
+      } catch (err) {
+        // Só cai em mock se a API realmente falhou (rede/5xx).
+        const status = err?.status ?? 0
+        if (status === 0 || status >= 500) {
+          setUsingMock(true)
+          setHistoryData({ isMock: true, periodId: period })
+        } else {
+          setError(err?.message ?? 'Falha ao carregar histórico.')
+          setHistoryData(null)
+        }
       } finally {
         setLoading(false)
       }
@@ -227,36 +239,45 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* Gráfico */}
-        <div className="mt-6 h-[380px] w-full">
-          <ResponsiveContainer>
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-              <XAxis dataKey="label" stroke="#a1a1aa" tick={{ fontSize: 12 }} />
-              <YAxis yAxisId="left" stroke="#a1a1aa" />
-              <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" domain={[0, 3]} />
-              <Tooltip
-                contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 12 }}
-                labelStyle={{ color: '#e4e4e7' }}
-              />
-              <Legend />
-              <Bar yAxisId="left" dataKey="ocorrencias" fill="#ef4444" name="Total" radius={[8, 8, 0, 0]} />
-              {/* Barras de breakdown por intensidade — só aparecem se tiver dados */}
-              <Bar yAxisId="left" dataKey="baixa" fill="#22c55e" name="Baixa" radius={[4, 4, 0, 0]} />
-              <Bar yAxisId="left" dataKey="media" fill="#f59e0b" name="Média" radius={[4, 4, 0, 0]} />
-              <Bar yAxisId="left" dataKey="alta" fill="#f97316" name="Alta" radius={[4, 4, 0, 0]} />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="intensidadeMedia"
-                stroke="#f59e0b"
-                strokeWidth={3}
-                name="Intensidade média"
-                dot={{ fill: '#f59e0b', r: 4 }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Gráfico ou empty-state */}
+        {!loading && totals && totals.total === 0 && (
+          <div className="mt-6 flex flex-col items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-12 text-center text-sm text-zinc-400">
+            <BarChart2 size={28} className="mb-3 text-zinc-600" />
+            <p className="font-medium text-zinc-300">Sem ocorrências registradas nesse período.</p>
+            <p className="mt-1 text-xs">Tente um intervalo maior ou aguarde novas denúncias.</p>
+          </div>
+        )}
+
+        {!loading && (!totals || totals.total > 0) && (
+          <div className="mt-6 h-[380px] w-full">
+            <ResponsiveContainer>
+              <ComposedChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+                <XAxis dataKey="label" stroke="#a1a1aa" tick={{ fontSize: 12 }} />
+                <YAxis yAxisId="left" stroke="#a1a1aa" />
+                <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" domain={[0, 3]} />
+                <Tooltip
+                  contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 12 }}
+                  labelStyle={{ color: '#e4e4e7' }}
+                />
+                <Legend />
+                <Bar yAxisId="left" dataKey="ocorrencias" fill="#ef4444" name="Total" radius={[8, 8, 0, 0]} />
+                <Bar yAxisId="left" dataKey="baixa" fill="#22c55e" name="Baixa" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="media" fill="#f59e0b" name="Média" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="alta" fill="#f97316" name="Alta" radius={[4, 4, 0, 0]} />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="intensidadeMedia"
+                  stroke="#f59e0b"
+                  strokeWidth={3}
+                  name="Intensidade média"
+                  dot={{ fill: '#f59e0b', r: 4 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Cards das cidades */}
         <div className="mt-6">
