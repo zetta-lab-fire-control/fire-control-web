@@ -9,6 +9,9 @@ export function useOccurrences({ filters = {}, pollInterval = 60000 } = {}) {
   const [error, setError] = useState(null)
   const [isUsingMock, setIsUsingMock] = useState(false)
   const abortControllerRef = useRef(null)
+  const hasRealDataRef = useRef(false)
+
+  const filtersString = JSON.stringify(filters)
 
   const fetchOccurrences = useCallback(async (retryCount = 0) => {
     // Cancela a requisição anterior se ainda estiver pendente
@@ -21,11 +24,11 @@ export function useOccurrences({ filters = {}, pollInterval = 60000 } = {}) {
     setError(null)
 
     try {
+      const currentFilters = JSON.parse(filtersString)
       const requestFilters = {
-        skip: filters.skip ?? 0,
-        limit: filters.limit ?? 200,
-        ...filters,
-        _t: Date.now(),
+        skip: currentFilters.skip ?? 0,
+        limit: currentFilters.limit ?? 200,
+        ...currentFilters,
       }
 
       const response = await occurrenceApi.list(requestFilters, {
@@ -39,26 +42,36 @@ export function useOccurrences({ filters = {}, pollInterval = 60000 } = {}) {
 
       setData(adaptedList)
       setIsUsingMock(false)
+      hasRealDataRef.current = true
     } catch (err) {
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        // Ignora erros de cancelamento (outra requisição já começou)
         return
       }
 
-      // Tenta novamente se for erro de rede/servidor (máximo 2 retentativas)
-      if (retryCount < 2) {
+      // Erros "de aplicação" (4xx) são erros reais da API — não mascara com mock,
+      // mostra a mensagem para o usuário corrigir (login expirado, payload inválido…).
+      const status = err.status ?? 0
+      const isServerOrNetwork = status === 0 || status >= 500
+
+      if (isServerOrNetwork && retryCount < 2) {
         setTimeout(() => fetchOccurrences(retryCount + 1), 1000 * (retryCount + 1))
         return
       }
 
-      console.warn('[useOccurrences] API indisponível, usando dados de mock:', err.message)
-      setData(mockOccurrences)
-      setIsUsingMock(true)
       setError(err.message ?? 'Falha ao buscar ocorrências na API.')
+
+      // Só cai em mock quando a API está genuinamente inacessível (rede/5xx)
+      // E apenas se nunca tivemos dados reais. Se já tínhamos, mantém o que
+      // estava em tela e mostra apenas o erro — não vira mock.
+      if (isServerOrNetwork && !hasRealDataRef.current) {
+        console.warn('[useOccurrences] API indisponível, usando dados de mock:', err.message)
+        setData(mockOccurrences)
+        setIsUsingMock(true)
+      }
     } finally {
       setLoading(false)
     }
-  }, [JSON.stringify(filters)])
+  }, [filtersString])
 
   useEffect(() => {
     fetchOccurrences()
