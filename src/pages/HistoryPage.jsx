@@ -15,10 +15,11 @@ import { occurrenceApi } from '../services/api.js'
 import { historyByPeriod } from '../data/mockOccurrences.js'
 
 const periodOptions = [
-  { value: '30',  label: 'Últimos 30 dias' },
-  { value: '60',  label: 'Últimos 60 dias' },
-  { value: '90',  label: 'Últimos 90 dias' },
-  { value: 'ano', label: 'Último ano' },
+  { value: 'hoje', label: 'Hoje' },
+  { value: '30',   label: 'Últimos 30 dias' },
+  { value: '60',   label: 'Últimos 60 dias' },
+  { value: '90',   label: 'Últimos 90 dias' },
+  { value: 'ano',  label: 'Último ano' },
 ]
 
 const intensityWeights = { low: 1, medium: 2, high: 3 }
@@ -41,12 +42,15 @@ export default function HistoryPage() {
         end.setHours(23, 59, 59, 999)
 
         const start = new Date(end)
-        if (period === 'ano') {
+        if (period === 'hoje') {
+          start.setHours(0, 0, 0, 0)
+        } else if (period === 'ano') {
           start.setFullYear(end.getFullYear() - 1)
+          start.setHours(0, 0, 0, 0)
         } else {
           start.setDate(end.getDate() - Number(period))
+          start.setHours(0, 0, 0, 0)
         }
-        start.setHours(0, 0, 0, 0)
 
         const response = await occurrenceApi.getHistory(start.toISOString(), end.toISOString())
         setHistoryData(response)
@@ -83,7 +87,7 @@ export default function HistoryPage() {
       medCount * intensityWeights.medium +
       hiCount  * intensityWeights.high
 
-    const periodLabel = period === 'ano' ? 'Último ano' : `Últimos ${period} dias`
+    const periodLabel = period === 'hoje' ? 'Hoje' : period === 'ano' ? 'Último ano' : `Últimos ${period} dias`
 
     if (Array.isArray(historyData.daily) && historyData.daily.length > 0) {
       return historyData.daily.map((d) => ({
