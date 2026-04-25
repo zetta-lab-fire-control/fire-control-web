@@ -39,4 +39,10 @@ export const dataScienceApi = {
       },
     }).then((r) => r.data)
   },
+
+  predict({ nomeModelo, tipoModelo, dados }) {
+    return _http.post('/predicao/', { tipo_modelo: tipoModelo, dados }, {
+      params: { nome_modelo: nomeModelo },
+    }).then((r) => r.data)
+  },
 }

@@ -4,9 +4,215 @@ import {
 } from 'recharts'
 import {
   BrainCircuit, Database, Flame, Loader2, AlertTriangle,
-  TrendingUp, Droplets, Wind, Search, ChevronDown,
+  TrendingUp, Droplets, Wind, Search, ChevronDown, MapPin, Zap,
 } from 'lucide-react'
 import { dataScienceApi } from '../features/data-science/dsApi.js'
+
+// ─── Dados das cidades do Norte de MG ───────────────────────────────────────
+
+const CIDADES_NORTE_MG = [
+  { label: 'Montes Claros',    lat: -16.7282, lng: -43.8619, id: 314920 },
+  { label: 'Janaúba',          lat: -15.8020, lng: -43.3085, id: 311440 },
+  { label: 'Januária',         lat: -15.4888, lng: -44.3613, id: 311480 },
+  { label: 'Bocaiúva',         lat: -17.1058, lng: -43.8173, id: 310040 },
+  { label: 'Pirapora',         lat: -17.3415, lng: -44.9420, id: 314570 },
+  { label: 'Salinas',          lat: -16.1699, lng: -42.2949, id: 316090 },
+  { label: 'São Francisco',    lat: -15.9491, lng: -44.8641, id: 316240 },
+  { label: 'Espinosa',         lat: -14.9264, lng: -42.8121, id: 312460 },
+  { label: 'Coração de Jesus', lat: -16.6902, lng: -44.3634, id: 312010 },
+  { label: 'Unaí',             lat: -16.3590, lng: -46.9044, id: 317010 },
+  { label: 'Manga',            lat: -14.7565, lng: -43.9319, id: 312700 },
+  { label: 'Pai Pedro',        lat: -15.2476, lng: -42.4897, id: 314343 },
+]
+
+const CLASSE_META = {
+  low:    { label: 'Baixa',  color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-800/30' },
+  medium: { label: 'Média',  color: 'text-amber-400',   bg: 'bg-amber-500/10   border-amber-800/30'   },
+  high:   { label: 'Alta',   color: 'text-red-400',     bg: 'bg-red-500/10     border-red-800/30'     },
+}
+
+function getClasseMeta(classe) {
+  const key = String(classe).toLowerCase()
+  return CLASSE_META[key] ?? { label: classe, color: 'text-zinc-300', bg: 'bg-zinc-800/50 border-zinc-700' }
+}
+
+// ─── Simulador de risco por local ───────────────────────────────────────────
+
+function Simulator({ models }) {
+  const now = new Date()
+  const [cidadeIdx, setCidadeIdx]     = useState(0)
+  const [diasSemChuva, setDias]       = useState(15)
+  const [precipitacao, setPrecip]     = useState(5)
+  const [loading, setLoading]         = useState(false)
+  const [result, setResult]           = useState(null)
+  const [error, setError]             = useState(null)
+
+  const classModel = models.find((m) => m.tipo === 'classificacao')
+  const regModel   = models.find((m) => m.tipo === 'regressao')
+
+  const cidade = CIDADES_NORTE_MG[cidadeIdx]
+
+  const handlePredict = useCallback(async () => {
+    if (!classModel && !regModel) {
+      setError('Nenhum modelo disponível na API de ciência de dados.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    const record = {
+      DiaSemChuva:  diasSemChuva,
+      Precipitacao: precipitacao,
+      RiscoFogo:    Math.min(1, diasSemChuva / 60),
+      FRP:          diasSemChuva > 30 ? 80 : 30,
+      Latitude:     cidade.lat,
+      Longitude:    cidade.lng,
+      Ano:          now.getFullYear(),
+      Mes:          now.getMonth() + 1,
+      Dia:          now.getDate(),
+      Hora_decimal: 12.0,
+      ID_UF:        31,
+      ID_Município: cidade.id,
+      Satelite:     'AQUA_M-T',
+      Pais:         'Brasil',
+      Nome_UF:      'Minas Gerais',
+      Nome_Município: cidade.label,
+      Bioma:        'Cerrado',
+    }
+
+    try {
+      const [classRes, regRes] = await Promise.all([
+        classModel
+          ? dataScienceApi.predict({ nomeModelo: classModel.nome, tipoModelo: 'classificacao', dados: [record] })
+          : null,
+        regModel
+          ? dataScienceApi.predict({ nomeModelo: regModel.nome, tipoModelo: 'regressao', dados: [record] })
+          : null,
+      ])
+      setResult({ classRes, regRes })
+    } catch (err) {
+      setError(err?.response?.data?.detail ?? err?.message ?? 'Erro ao obter predição.')
+    } finally {
+      setLoading(false)
+    }
+  }, [cidade, diasSemChuva, precipitacao, classModel, regModel, now])
+
+  const inputCls = 'rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30'
+
+  const classeRaw  = result?.classRes?.predicoes?.[0]
+  const classeMeta = classeRaw != null ? getClasseMeta(classeRaw) : null
+  const probList   = result?.classRes?.probabilidades?.[0]
+  const classeNomes = result?.classRes?.classes ?? []
+  const frpPred    = result?.regRes?.predicoes?.[0]
+
+  return (
+    <div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-5">
+        <div className="grid gap-1.5 xl:col-span-2">
+          <label className="text-xs text-zinc-400 flex items-center gap-1">
+            <MapPin size={11} /> Município
+          </label>
+          <select
+            value={cidadeIdx}
+            onChange={(e) => setCidadeIdx(Number(e.target.value))}
+            className={inputCls}
+          >
+            {CIDADES_NORTE_MG.map((c, i) => (
+              <option key={c.label} value={i}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid gap-1.5">
+          <label className="text-xs text-zinc-400">
+            Dias sem chuva: <span className="text-zinc-200 font-semibold">{diasSemChuva}</span>
+          </label>
+          <input
+            type="range" min={0} max={60} step={1}
+            value={diasSemChuva}
+            onChange={(e) => setDias(Number(e.target.value))}
+            className="accent-orange-500"
+          />
+        </div>
+
+        <div className="grid gap-1.5">
+          <label className="text-xs text-zinc-400">
+            Precipitação: <span className="text-zinc-200 font-semibold">{precipitacao} mm</span>
+          </label>
+          <input
+            type="range" min={0} max={200} step={1}
+            value={precipitacao}
+            onChange={(e) => setPrecip(Number(e.target.value))}
+            className="accent-blue-500"
+          />
+        </div>
+      </div>
+
+      <div className="mb-1 flex items-center gap-3 text-xs text-zinc-600">
+        <span>Lat {cidade.lat.toFixed(4)}</span>
+        <span>Lng {cidade.lng.toFixed(4)}</span>
+        <span>Data: {now.toLocaleDateString('pt-BR')}</span>
+      </div>
+
+      <button
+        onClick={handlePredict}
+        disabled={loading || (!classModel && !regModel)}
+        className="mt-3 flex items-center gap-2 rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-600 disabled:opacity-50 transition"
+      >
+        {loading ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
+        {loading ? 'Prevendo...' : 'Prever agora'}
+      </button>
+
+      {error && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-700/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <AlertTriangle size={15} /> {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {classeMeta && (
+            <div className={`rounded-2xl border p-5 ${classeMeta.bg}`}>
+              <p className="text-xs text-zinc-400 mb-1">Intensidade prevista</p>
+              <p className={`text-3xl font-bold mb-3 ${classeMeta.color}`}>{classeMeta.label}</p>
+              {probList && classeNomes.length > 0 && (
+                <div className="space-y-1.5">
+                  {classeNomes.map((cls, i) => {
+                    const pct = ((probList[i] ?? 0) * 100).toFixed(1)
+                    const meta = getClasseMeta(cls)
+                    return (
+                      <div key={cls} className="flex items-center gap-2 text-xs">
+                        <span className={`w-14 shrink-0 ${meta.color}`}>{meta.label}</span>
+                        <div className="flex-1 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+                          <div className="h-full rounded-full bg-current opacity-70 transition-all" style={{ width: `${pct}%`, color: meta.color }} />
+                        </div>
+                        <span className="text-zinc-500 w-10 text-right">{pct}%</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {frpPred != null && (
+            <div className="rounded-2xl border border-orange-800/30 bg-orange-500/10 p-5">
+              <p className="text-xs text-zinc-400 mb-1">FRP previsto</p>
+              <p className="text-3xl font-bold text-orange-300 mb-1">{Number(frpPred).toFixed(1)} MW</p>
+              <p className="text-xs text-zinc-500">
+                Fire Radiative Power — potência radiativa estimada do foco
+              </p>
+              <div className="mt-3 text-xs text-zinc-400 space-y-0.5">
+                <p>{frpPred < 50 ? '⬤ Foco de baixa radiância' : frpPred < 150 ? '⬤ Foco de média radiância' : '⬤ Foco de alta radiância'}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -433,6 +639,20 @@ export default function AnalysisPage() {
                 roda automaticamente sobre os dados filtrados.
               </p>
               <Explorer biomas={biomas} ufs={ufs} models={models} />
+            </div>
+
+            {/* Simulator */}
+            <div>
+              <SectionTitle
+                icon={<Zap size={16} className="text-violet-400" />}
+                title="Simulador de risco por local"
+                badge="PREVISÃO AO VIVO"
+              />
+              <p className="mb-4 text-sm text-zinc-400">
+                Selecione um município do Norte de Minas Gerais, informe condições climáticas e receba
+                a intensidade prevista pelo modelo de Machine Learning treinado sobre dados históricos do INPE.
+              </p>
+              <Simulator models={models} />
             </div>
 
             {/* Models */}
