@@ -4,224 +4,20 @@ import {
 } from 'recharts'
 import {
   BrainCircuit, Database, Flame, Loader2, AlertTriangle,
-  TrendingUp, Droplets, Wind, Search, ChevronDown, MapPin, Zap,
+  TrendingUp, Droplets, Wind, Search, BarChart2,
 } from 'lucide-react'
 import { dataScienceApi } from '../features/data-science/dsApi.js'
 
-// ─── Dados das cidades do Norte de MG ───────────────────────────────────────
-
-const CIDADES_NORTE_MG = [
-  { label: 'Montes Claros',    lat: -16.7282, lng: -43.8619, id: 314920 },
-  { label: 'Janaúba',          lat: -15.8020, lng: -43.3085, id: 311440 },
-  { label: 'Januária',         lat: -15.4888, lng: -44.3613, id: 311480 },
-  { label: 'Bocaiúva',         lat: -17.1058, lng: -43.8173, id: 310040 },
-  { label: 'Pirapora',         lat: -17.3415, lng: -44.9420, id: 314570 },
-  { label: 'Salinas',          lat: -16.1699, lng: -42.2949, id: 316090 },
-  { label: 'São Francisco',    lat: -15.9491, lng: -44.8641, id: 316240 },
-  { label: 'Espinosa',         lat: -14.9264, lng: -42.8121, id: 312460 },
-  { label: 'Coração de Jesus', lat: -16.6902, lng: -44.3634, id: 312010 },
-  { label: 'Unaí',             lat: -16.3590, lng: -46.9044, id: 317010 },
-  { label: 'Manga',            lat: -14.7565, lng: -43.9319, id: 312700 },
-  { label: 'Pai Pedro',        lat: -15.2476, lng: -42.4897, id: 314343 },
-]
-
-const CLASSE_META = {
-  low:    { label: 'Baixa',  color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-800/30' },
-  medium: { label: 'Média',  color: 'text-amber-400',   bg: 'bg-amber-500/10   border-amber-800/30'   },
-  high:   { label: 'Alta',   color: 'text-red-400',     bg: 'bg-red-500/10     border-red-800/30'     },
-}
-
-function getClasseMeta(classe) {
-  const key = String(classe).toLowerCase()
-  return CLASSE_META[key] ?? { label: classe, color: 'text-zinc-300', bg: 'bg-zinc-800/50 border-zinc-700' }
-}
-
-// ─── Simulador de risco por local ───────────────────────────────────────────
-
-function Simulator({ models }) {
-  const now = new Date()
-  const [cidadeIdx, setCidadeIdx]     = useState(0)
-  const [diasSemChuva, setDias]       = useState(15)
-  const [precipitacao, setPrecip]     = useState(5)
-  const [loading, setLoading]         = useState(false)
-  const [result, setResult]           = useState(null)
-  const [error, setError]             = useState(null)
-
-  const classModel = models.find((m) => m.tipo === 'classificacao')
-  const regModel   = models.find((m) => m.tipo === 'regressao')
-
-  const cidade = CIDADES_NORTE_MG[cidadeIdx]
-
-  const handlePredict = useCallback(async () => {
-    if (!classModel && !regModel) {
-      setError('Nenhum modelo disponível na API de ciência de dados.')
-      return
-    }
-    setLoading(true)
-    setError(null)
-    setResult(null)
-
-    const record = {
-      DiaSemChuva:  diasSemChuva,
-      Precipitacao: precipitacao,
-      RiscoFogo:    Math.min(1, diasSemChuva / 60),
-      FRP:          diasSemChuva > 30 ? 80 : 30,
-      Latitude:     cidade.lat,
-      Longitude:    cidade.lng,
-      Ano:          now.getFullYear(),
-      Mes:          now.getMonth() + 1,
-      Dia:          now.getDate(),
-      Hora_decimal: 12.0,
-      ID_UF:        31,
-      ID_Município: cidade.id,
-      Satelite:     'AQUA_M-T',
-      Pais:         'Brasil',
-      Nome_UF:      'Minas Gerais',
-      Nome_Município: cidade.label,
-      Bioma:        'Cerrado',
-    }
-
-    try {
-      const [classRes, regRes] = await Promise.all([
-        classModel
-          ? dataScienceApi.predict({ nomeModelo: classModel.nome, tipoModelo: 'classificacao', dados: [record] })
-          : null,
-        regModel
-          ? dataScienceApi.predict({ nomeModelo: regModel.nome, tipoModelo: 'regressao', dados: [record] })
-          : null,
-      ])
-      setResult({ classRes, regRes })
-    } catch (err) {
-      setError(err?.response?.data?.detail ?? err?.message ?? 'Erro ao obter predição.')
-    } finally {
-      setLoading(false)
-    }
-  }, [cidade, diasSemChuva, precipitacao, classModel, regModel, now])
-
-  const inputCls = 'rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30'
-
-  const classeRaw  = result?.classRes?.predicoes?.[0]
-  const classeMeta = classeRaw != null ? getClasseMeta(classeRaw) : null
-  const probList   = result?.classRes?.probabilidades?.[0]
-  const classeNomes = result?.classRes?.classes ?? []
-  const frpPred    = result?.regRes?.predicoes?.[0]
-
-  return (
-    <div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-5">
-        <div className="grid gap-1.5 xl:col-span-2">
-          <label className="text-xs text-zinc-400 flex items-center gap-1">
-            <MapPin size={11} /> Município
-          </label>
-          <select
-            value={cidadeIdx}
-            onChange={(e) => setCidadeIdx(Number(e.target.value))}
-            className={inputCls}
-          >
-            {CIDADES_NORTE_MG.map((c, i) => (
-              <option key={c.label} value={i}>{c.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid gap-1.5">
-          <label className="text-xs text-zinc-400">
-            Dias sem chuva: <span className="text-zinc-200 font-semibold">{diasSemChuva}</span>
-          </label>
-          <input
-            type="range" min={0} max={60} step={1}
-            value={diasSemChuva}
-            onChange={(e) => setDias(Number(e.target.value))}
-            className="accent-orange-500"
-          />
-        </div>
-
-        <div className="grid gap-1.5">
-          <label className="text-xs text-zinc-400">
-            Precipitação: <span className="text-zinc-200 font-semibold">{precipitacao} mm</span>
-          </label>
-          <input
-            type="range" min={0} max={200} step={1}
-            value={precipitacao}
-            onChange={(e) => setPrecip(Number(e.target.value))}
-            className="accent-blue-500"
-          />
-        </div>
-      </div>
-
-      <div className="mb-1 flex items-center gap-3 text-xs text-zinc-600">
-        <span>Lat {cidade.lat.toFixed(4)}</span>
-        <span>Lng {cidade.lng.toFixed(4)}</span>
-        <span>Data: {now.toLocaleDateString('pt-BR')}</span>
-      </div>
-
-      <button
-        onClick={handlePredict}
-        disabled={loading || (!classModel && !regModel)}
-        className="mt-3 flex items-center gap-2 rounded-xl bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-600 disabled:opacity-50 transition"
-      >
-        {loading ? <Loader2 size={15} className="animate-spin" /> : <Zap size={15} />}
-        {loading ? 'Prevendo...' : 'Prever agora'}
-      </button>
-
-      {error && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-700/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          <AlertTriangle size={15} /> {error}
-        </div>
-      )}
-
-      {result && (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {classeMeta && (
-            <div className={`rounded-2xl border p-5 ${classeMeta.bg}`}>
-              <p className="text-xs text-zinc-400 mb-1">Intensidade prevista</p>
-              <p className={`text-3xl font-bold mb-3 ${classeMeta.color}`}>{classeMeta.label}</p>
-              {probList && classeNomes.length > 0 && (
-                <div className="space-y-1.5">
-                  {classeNomes.map((cls, i) => {
-                    const pct = ((probList[i] ?? 0) * 100).toFixed(1)
-                    const meta = getClasseMeta(cls)
-                    return (
-                      <div key={cls} className="flex items-center gap-2 text-xs">
-                        <span className={`w-14 shrink-0 ${meta.color}`}>{meta.label}</span>
-                        <div className="flex-1 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                          <div className="h-full rounded-full bg-current opacity-70 transition-all" style={{ width: `${pct}%`, color: meta.color }} />
-                        </div>
-                        <span className="text-zinc-500 w-10 text-right">{pct}%</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
-          {frpPred != null && (
-            <div className="rounded-2xl border border-orange-800/30 bg-orange-500/10 p-5">
-              <p className="text-xs text-zinc-400 mb-1">FRP previsto</p>
-              <p className="text-3xl font-bold text-orange-300 mb-1">{Number(frpPred).toFixed(1)} MW</p>
-              <p className="text-xs text-zinc-500">
-                Fire Radiative Power — potência radiativa estimada do foco
-              </p>
-              <div className="mt-3 text-xs text-zinc-400 space-y-0.5">
-                <p>{frpPred < 50 ? '⬤ Foco de baixa radiância' : frpPred < 150 ? '⬤ Foco de média radiância' : '⬤ Foco de alta radiância'}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-function avg(arr, key) {
+function avg(arr, key, { nonNegative = false } = {}) {
   if (!arr?.length) return null
-  const vals = arr.map((r) => parseFloat(r[key])).filter((v) => !isNaN(v))
+  const vals = arr.map((r) => parseFloat(r[key])).filter((v) => !isNaN(v) && (!nonNegative || v >= 0))
   if (!vals.length) return null
   return vals.reduce((a, b) => a + b, 0) / vals.length
 }
+
+// ─── Componentes UI reutilizáveis ────────────────────────────────────────────
 
 function StatCard({ icon, label, value, sub, accent = 'zinc' }) {
   const colors = {
@@ -293,9 +89,53 @@ function DatasetOverview({ info }) {
   )
 }
 
-// ─── Seção 2: explorador + predição ─────────────────────────────────────────
+// ─── Seção 2: estatísticas descritivas ──────────────────────────────────────
 
-const ANOS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i)
+const STATS_CONFIG = [
+  { key: 'RiscoFogo',    label: 'Risco de Fogo',       unit: '',    accent: 'red',     fmt: (v) => (v * 100).toFixed(1) + '%' },
+  { key: 'FRP',          label: 'FRP (Fire Rad. Power)',unit: 'MW',  accent: 'orange',  fmt: (v) => v.toFixed(1) },
+  { key: 'DiaSemChuva',  label: 'Dias sem chuva',       unit: 'dias',accent: 'blue',   fmt: (v) => v.toFixed(1) },
+  { key: 'Precipitacao', label: 'Precipitação',         unit: 'mm',  accent: 'emerald', fmt: (v) => v.toFixed(2) },
+]
+
+function DatasetStats({ stats }) {
+  if (!stats) return null
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {STATS_CONFIG.map(({ key, label, unit, accent, fmt }) => {
+        const s = stats[key]
+        if (!s) return null
+        const mean = parseFloat(s.mean ?? 0)
+        const p50  = parseFloat(s['50%'] ?? 0)
+        const max  = parseFloat(s.max  ?? 0)
+        const min  = parseFloat(s.min  ?? 0)
+
+        return (
+          <div key={key} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <p className="text-sm font-semibold text-zinc-200 mb-4">{label}</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+              {[
+                { lbl: 'Média',    val: fmt(mean) },
+                { lbl: 'Mediana',  val: fmt(p50)  },
+                { lbl: 'Mínimo',   val: fmt(Math.max(0, min)) },
+                { lbl: 'Máximo',   val: fmt(max)  },
+              ].map(({ lbl, val }) => (
+                <div key={lbl}>
+                  <p className="text-zinc-500">{lbl}</p>
+                  <p className={`font-semibold text-${accent}-400`}>{val}{unit ? ` ${unit}` : ''}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Seção 3: explorador ────────────────────────────────────────────────────
+
 const MESES = [
   { value: '', label: 'Todos os meses' },
   { value: 1,  label: 'Janeiro' },  { value: 2,  label: 'Fevereiro' },
@@ -306,23 +146,19 @@ const MESES = [
   { value: 11, label: 'Novembro' }, { value: 12, label: 'Dezembro' },
 ]
 
-function Explorer({ biomas, ufs, models }) {
-  const [bioma, setBioma]   = useState('')
-  const [uf, setUf]         = useState('')
-  const [ano, setAno]       = useState('')
-  const [mes, setMes]       = useState('')
+function Explorer({ biomas, ufs, anos }) {
+  const [bioma, setBioma]     = useState('')
+  const [uf, setUf]           = useState('')
+  const [ano, setAno]         = useState('')
+  const [mes, setMes]         = useState('')
   const [loading, setLoading] = useState(false)
   const [result, setResult]   = useState(null)
-  const [prediction, setPrediction] = useState(null)
-  const [error, setError]   = useState(null)
-
-  const firstModel = models?.[0] ?? null
+  const [error, setError]     = useState(null)
 
   const handleSearch = useCallback(async () => {
     setLoading(true)
     setError(null)
     setResult(null)
-    setPrediction(null)
 
     try {
       const filterBody = {
@@ -332,47 +168,33 @@ function Explorer({ biomas, ufs, models }) {
         ...(mes   && { mes: Number(mes) }),
         n_linhas: 2000,
       }
-
-      const [filtered, pred] = await Promise.all([
-        dataScienceApi.filterData(filterBody),
-        firstModel
-          ? dataScienceApi.predictOnDataset({
-              nomeModelo:  firstModel.nome,
-              tipoModelo:  firstModel.tipo,
-              filtroAno:   ano   || undefined,
-              filtroBioma: bioma || undefined,
-              filtroUf:    uf    || undefined,
-              nLinhas:     1000,
-            }).catch(() => null)
-          : Promise.resolve(null),
-      ])
-
+      const filtered = await dataScienceApi.filterData(filterBody)
       setResult(filtered)
-      setPrediction(pred)
     } catch (err) {
       setError(err?.message ?? 'Erro ao buscar dados.')
     } finally {
       setLoading(false)
     }
-  }, [bioma, uf, ano, mes, firstModel])
+  }, [bioma, uf, ano, mes])
 
-  const rows   = result?.dados ?? []
-  const avgRisco    = avg(rows, 'RiscoFogo')
-  const avgSemChuva = avg(rows, 'DiaSemChuva')
+  const rows        = result?.dados ?? []
+  const avgRisco    = avg(rows, 'RiscoFogo',   { nonNegative: true })
+  const avgSemChuva = avg(rows, 'DiaSemChuva', { nonNegative: true })
   const avgChuva    = avg(rows, 'Precipitacao')
   const avgFRP      = avg(rows, 'FRP')
 
-  // Distribuição de predições para classificação
-  const predChart = (() => {
-    if (!prediction?.predicoes?.length) return null
+  // Distribuição de focos por bioma na amostra
+  const biomaChart = (() => {
+    if (!rows.length) return null
     const counts = {}
-    prediction.predicoes.forEach((p) => {
-      const k = String(p)
+    rows.forEach((r) => {
+      const k = r.Bioma ?? 'N/A'
       counts[k] = (counts[k] ?? 0) + 1
     })
     return Object.entries(counts)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
+      .slice(0, 8)
   })()
 
   const inputCls = 'rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30'
@@ -398,7 +220,7 @@ function Explorer({ biomas, ufs, models }) {
           <label className="text-xs text-zinc-400">Ano</label>
           <select value={ano} onChange={(e) => setAno(e.target.value)} className={inputCls}>
             <option value="">Todos</option>
-            {ANOS.map((a) => <option key={a} value={a}>{a}</option>)}
+            {anos.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
         <div className="grid gap-1.5">
@@ -462,28 +284,25 @@ function Explorer({ biomas, ufs, models }) {
             </div>
           )}
 
-          {predChart && (
+          {biomaChart && (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
-              <p className="mb-1 text-sm font-semibold text-zinc-100">
-                Predição do modelo —{' '}
-                <span className="font-normal text-zinc-400">{firstModel?.nome?.replace('.joblib', '')}</span>
-              </p>
-              <p className="mb-4 text-xs text-zinc-500">
-                Distribuição das classes previstas para {prediction.total_linhas?.toLocaleString('pt-BR')} registros filtrados.
+              <p className="mb-4 text-sm font-semibold text-zinc-100">
+                Distribuição por bioma
+                <span className="ml-2 font-normal text-zinc-500 text-xs">— amostra de {rows.length.toLocaleString('pt-BR')} registros</span>
               </p>
               <div className="h-48">
                 <ResponsiveContainer>
-                  <BarChart data={predChart} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                  <BarChart data={biomaChart} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                    <XAxis dataKey="name" stroke="#a1a1aa" tick={{ fontSize: 11 }} />
-                    <YAxis stroke="#a1a1aa" tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="name" stroke="#52525b" tick={{ fontSize: 10, fill: '#a1a1aa' }} />
+                    <YAxis stroke="#52525b" tick={{ fontSize: 11, fill: '#a1a1aa' }} />
                     <Tooltip
                       contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 12 }}
                       labelStyle={{ color: '#e4e4e7' }}
                     />
-                    <Bar dataKey="count" name="Registros" radius={[6, 6, 0, 0]}>
-                      {predChart.map((_, i) => (
-                        <Cell key={i} fill={['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ef4444'][i % 5]} />
+                    <Bar dataKey="count" name="Focos" radius={[6, 6, 0, 0]}>
+                      {biomaChart.map((_, i) => (
+                        <Cell key={i} fill={['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ef4444', '#14b8a6', '#f59e0b', '#6366f1'][i % 8]} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -497,83 +316,37 @@ function Explorer({ biomas, ufs, models }) {
   )
 }
 
-// ─── Seção 3: modelos ────────────────────────────────────────────────────────
-
-function ModelCard({ model }) {
-  const [open, setOpen] = useState(false)
-  const isClass = model.tipo === 'classificacao'
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="font-medium text-zinc-100 text-sm">{model.nome?.replace('.joblib', '')}</p>
-          <p className="text-xs text-zinc-500 capitalize mt-0.5">{model.tipo}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${isClass ? 'border-violet-500/30 bg-violet-500/10 text-violet-400' : 'border-blue-500/30 bg-blue-500/10 text-blue-400'}`}>
-            {isClass ? 'Classificação' : 'Regressão'}
-          </span>
-          <span className="text-xs text-zinc-600">{model.tamanho_mb?.toFixed(1)} MB</span>
-        </div>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-400">
-        <span><span className="text-zinc-600">Features:</span> {model.num_features}</span>
-        {isClass && <span><span className="text-zinc-600">Classes:</span> {model.num_classes}</span>}
-      </div>
-
-      {isClass && model.classes?.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {model.classes.map((c) => (
-            <span key={c} className="rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400">
-              {c}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="mt-3 flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition"
-      >
-        <ChevronDown size={12} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
-        {open ? 'Ocultar features' : 'Ver features'}
-      </button>
-
-      {open && model.feature_names?.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {model.feature_names.map((f) => (
-            <span key={f} className="rounded border border-zinc-700/50 bg-zinc-800/50 px-1.5 py-0.5 text-[10px] text-zinc-500">
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Página ──────────────────────────────────────────────────────────────────
 
 export default function AnalysisPage() {
   const [info, setInfo]       = useState(null)
-  const [models, setModels]   = useState([])
+  const [stats, setStats]     = useState(null)
   const [biomas, setBiomas]   = useState([])
   const [ufs, setUfs]         = useState([])
   const [loading, setLoading] = useState(true)
   const [offline, setOffline] = useState(false)
 
+  // Anos derivados do período real do dataset
+  const anos = (() => {
+    const start = parseInt(info?.periodo_inicio?.slice(0, 4))
+    const end   = parseInt(info?.periodo_fim?.slice(0, 4))
+    if (!start || !end) return [2025, 2024, 2023, 2022]
+    const result = []
+    for (let y = end; y >= start; y--) result.push(y)
+    return result
+  })()
+
   useEffect(() => {
     setLoading(true)
     Promise.all([
       dataScienceApi.getInfo().catch(() => null),
-      dataScienceApi.listModels().catch(() => null),
+      dataScienceApi.getStats().catch(() => null),
       dataScienceApi.getUniqueValues('Bioma').catch(() => null),
       dataScienceApi.getUniqueValues('Nome_UF').catch(() => null),
-    ]).then(([dsInfo, dsModels, biomasData, ufsData]) => {
-      setOffline(!dsInfo && !dsModels)
+    ]).then(([dsInfo, dsStats, biomasData, ufsData]) => {
+      setOffline(!dsInfo && !dsStats)
       setInfo(dsInfo)
-      setModels(dsModels?.modelos ?? [])
+      setStats(dsStats)
       setBiomas(biomasData?.valores ?? [])
       setUfs(ufsData?.valores ?? [])
     }).finally(() => setLoading(false))
@@ -594,7 +367,7 @@ export default function AnalysisPage() {
             </div>
             <p className="text-sm text-zinc-400">
               Dados históricos INPE/QUEIMADAS processados pelo ZettaLab — explore focos por região e
-              veja as predições dos modelos treinados.
+              analise padrões de risco ao longo do tempo.
             </p>
           </div>
         </div>
@@ -610,7 +383,7 @@ export default function AnalysisPage() {
             <AlertTriangle size={18} className="shrink-0 text-amber-500/70" />
             <div>
               <p className="font-medium text-zinc-300">API de Ciência de Dados não está acessível.</p>
-              <p className="text-xs mt-0.5">Certifique-se que o serviço <code className="text-violet-400">fire-control-data-science-main</code> está rodando na porta 8001.</p>
+              <p className="text-xs mt-0.5">Certifique-se que o container <code className="text-violet-400">uai-data-science</code> está no ar.</p>
             </div>
           </div>
         )}
@@ -628,6 +401,18 @@ export default function AnalysisPage() {
               <DatasetOverview info={info} />
             </div>
 
+            {/* Estatísticas descritivas */}
+            <div>
+              <SectionTitle
+                icon={<BarChart2 size={16} className="text-blue-400" />}
+                title="Estatísticas descritivas"
+              />
+              <p className="mb-4 text-sm text-zinc-400">
+                Resumo estatístico das principais variáveis climáticas e de risco em todo o dataset.
+              </p>
+              <DatasetStats stats={stats} />
+            </div>
+
             {/* Explorer */}
             <div>
               <SectionTitle
@@ -635,38 +420,11 @@ export default function AnalysisPage() {
                 title="Explorador de focos históricos"
               />
               <p className="mb-4 text-sm text-zinc-400">
-                Filtre os registros INPE e veja estatísticas de risco para a região. O modelo preditivo
-                roda automaticamente sobre os dados filtrados.
+                Filtre os registros INPE por bioma, estado, ano e mês. Veja estatísticas de risco
+                e a distribuição por bioma para o recorte selecionado.
               </p>
-              <Explorer biomas={biomas} ufs={ufs} models={models} />
+              <Explorer biomas={biomas} ufs={ufs} anos={anos} />
             </div>
-
-            {/* Simulator */}
-            <div>
-              <SectionTitle
-                icon={<Zap size={16} className="text-violet-400" />}
-                title="Simulador de risco por local"
-                badge="PREVISÃO AO VIVO"
-              />
-              <p className="mb-4 text-sm text-zinc-400">
-                Selecione um município do Norte de Minas Gerais, informe condições climáticas e receba
-                a intensidade prevista pelo modelo de Machine Learning treinado sobre dados históricos do INPE.
-              </p>
-              <Simulator models={models} />
-            </div>
-
-            {/* Models */}
-            {models.length > 0 && (
-              <div>
-                <SectionTitle
-                  icon={<BrainCircuit size={16} className="text-violet-400" />}
-                  title={`Modelos treinados (${models.length})`}
-                />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {models.map((m) => <ModelCard key={m.nome} model={m} />)}
-                </div>
-              </div>
-            )}
 
           </div>
         )}
