@@ -1,5 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Icon } from 'leaflet'
+import markerIconUrl from 'leaflet/dist/images/marker-icon.png'
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import { AuthProvider } from './contexts/AuthContext.jsx'
+
+Icon.Default.mergeOptions({ iconUrl: markerIconUrl, shadowUrl: markerShadowUrl, iconRetinaUrl: markerIconUrl })
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Navbar from './components/Navbar.jsx'
 import HomePage from './pages/HomePage.jsx'
