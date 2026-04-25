@@ -149,9 +149,9 @@ export default function HomePage() {
 
       <section className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          title="Focos ativos hoje"
+          title="Focos denunciados"
           value={loading && !occurrences.length ? '...' : stats.activeToday}
-          note="Número de focos registrados"
+          note="Total de ocorrências em aberto no sistema"
           tone="red"
         />
         <StatCard
