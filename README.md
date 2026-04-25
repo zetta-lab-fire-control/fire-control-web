@@ -1,10 +1,10 @@
-# UAI — Alerta de Unidade de Incêndio
+# UAI — Unidade de Alerta de Incêndio
 
-Frontend do projeto integrador focado em monitoramento e prevenção de incêndios florestais no Norte de Minas Gerais.
+Frontend do sistema de monitoramento e prevenção de incêndios florestais no Norte de Minas Gerais.
 
 ## Stack
 
-- React + Vite
+- React 19 + Vite
 - Tailwind CSS (v3)
 - React Router DOM
 - React Leaflet + Leaflet + react-leaflet-cluster
@@ -12,57 +12,74 @@ Frontend do projeto integrador focado em monitoramento e prevenção de incêndi
 - Lucide React
 - Axios
 
-## Etapa atual
+## Telas
 
-Integração com a API REST (FastAPI). O frontend consome endpoints reais com fallback para dados mockados quando a API está indisponível.
-
-### Telas implementadas
-
-| Rota         | Tela                          | Status              |
-|--------------|-------------------------------|---------------------|
-| `/`          | Mapa público com indicadores  | Integrado à API     |
-| `/historico` | Histórico e gráficos          | Integrado à API     |
-| `/reportar`  | Formulário de denúncia        | Integrado à API     |
-| `/login`     | Login de bombeiros            | Integrado à API     |
-| `/painel`    | Painel operacional (dashboard)| Integrado à API     |
+| Rota         | Tela                           | Status          |
+|--------------|--------------------------------|-----------------|
+| `/`          | Mapa público com indicadores   | Integrado à API |
+| `/historico` | Histórico e gráficos           | Integrado à API |
+| `/reportar`  | Formulário de denúncia         | Integrado à API |
+| `/login`     | Login institucional            | Integrado à API |
+| `/painel`    | Painel operacional (bombeiros) | Integrado à API |
+| `/admin`     | Administração de usuários      | Integrado à API |
 
 ## Como rodar
 
-### Pré-requisitos
+### Opção 1 — Docker (frontend + backend juntos)
 
-- Node.js 18+
-- Backend (`fire-control-api`) rodando em `https://localhost:8000`
+Requer Docker Compose >= 2.20.
 
-### Configuração
+```bash
+# Na raiz do repositório zetta/
+docker compose up --build
+```
+
+- Frontend: http://localhost:3000
+- API: https://localhost:8000
+
+> Na primeira execução, acesse `https://localhost:8000` no navegador e aceite
+> o certificado autoassinado antes de usar o frontend.
+
+Para parar:
+
+```bash
+docker compose down
+```
+
+### Opção 2 — Desenvolvimento local (hot reload)
+
+**Pré-requisitos:** Node.js 20+, backend rodando em `https://localhost:8000`.
 
 ```bash
 # 1. Instalar dependências
 npm install
 
-# 2. Criar o arquivo de variáveis de ambiente (edite se necessário)
+# 2. Configurar variáveis de ambiente
 cp .env.example .env
-```
 
-> ⚠️ O backend usa certificado SSL autoassinado em desenvolvimento.
-> Acesse `https://localhost:8000/docs` uma vez no navegador e aceite o certificado
-> antes de usar o frontend, caso contrário as requisições serão bloqueadas.
-
-### Execução
-
-```bash
+# 3. Iniciar servidor de desenvolvimento
 npm run dev
 ```
 
-### Build e qualidade
+O servidor fica disponível em `http://localhost:5173`.
+
+### Build e lint
 
 ```bash
-npm run lint
-npm run build
+npm run build   # Produção → dist/
+npm run lint    # ESLint
+npm run preview # Preview do build de produção
 ```
 
-## Pendências de integração
+## Integração de Ciência de Dados
 
-- [ ] Autenticação real com JWT (o backend ainda retorna `true` no login)
-- [ ] Substituir UUID fixo de usuário anônimo pelo ID do usuário autenticado
-- [ ] Proteção de rota `/painel` (redirecionar se não autenticado)
-- [ ] Upload de foto via MinIO validado end-to-end com backend rodando
+O código de integração com a API do time de Data Science (`fire-control-data-science-main`)
+está isolado em `src/features/data-science/` e **não faz parte do bundle principal**.
+Para ativá-lo, importe `DataScienceSection` de lá e defina `VITE_DS_API_URL` no `.env`.
+
+## Variáveis de ambiente
+
+| Variável          | Descrição                                    | Padrão                    |
+|-------------------|----------------------------------------------|---------------------------|
+| `VITE_API_URL`    | URL base da API REST (FastAPI)               | `https://localhost:8000`  |
+| `VITE_DS_API_URL` | URL da API de Ciência de Dados (opcional)    | `http://localhost:8001`   |

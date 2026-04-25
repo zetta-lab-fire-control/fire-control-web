@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    base: '/fire-control-web/',
+    base: process.env.VITE_BASE_URL ?? '/fire-control-web/',
     server: {
       proxy: {
         '/api': {
