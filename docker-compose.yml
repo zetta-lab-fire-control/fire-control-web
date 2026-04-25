@@ -1,0 +1,29 @@
+# Inicia frontend + backend com um único comando:
+#   docker compose up --build
+#
+# Requer Docker Compose >= 2.20 (suporte à diretiva `include`).
+# Precisa que fire-control-api/ esteja na mesma pasta pai que fire-control-web/.
+#
+# Frontend: http://localhost:3000
+# API:      https://localhost:8000
+
+include:
+  - ../fire-control-api/deploy/compose/dev.yml
+
+services:
+  frontend:
+    container_name: uai-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_BASE_URL: /
+    ports:
+      - "3000:80"
+    networks:
+      - fire-control-api
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped

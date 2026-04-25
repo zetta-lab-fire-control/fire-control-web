@@ -1,85 +1,92 @@
 # UAI — Unidade de Alerta de Incêndio
 
-Frontend do sistema de monitoramento e prevenção de incêndios florestais no Norte de Minas Gerais.
+Sistema comunitário de monitoramento e prevenção de incêndios florestais no Norte de Minas Gerais. A comunidade reporta focos, o sistema agrupa alertas e facilita a resposta rápida de bombeiros e brigadistas.
 
-## Stack
+---
 
-- React 19 + Vite
-- Tailwind CSS (v3)
-- React Router DOM
-- React Leaflet + Leaflet + react-leaflet-cluster
-- Recharts
-- Lucide React
-- Axios
+## Funcionalidades
+
+- **Mapa em tempo real** — focos agrupados por cluster, popups com intensidade, status e horário, filtros por período, cidade e intensidade
+- **Denúncias georreferenciadas** — formulário com seleção no mapa, restrito à região do Norte de Minas Gerais
+- **Histórico com gráficos** — evolução de ocorrências por período (hoje, 30, 60, 90 dias, último ano)
+- **Painel operacional** — bombeiros visualizam e gerenciam ocorrências em tempo real
+- **Painel administrativo** — gestão de usuários e criação de contas de bombeiros
+- **Autenticação JWT** — controle de acesso por perfil: usuário, bombeiro e admin
+
+---
 
 ## Telas
 
-| Rota         | Tela                           | Status          |
-|--------------|--------------------------------|-----------------|
-| `/`          | Mapa público com indicadores   | Integrado à API |
-| `/historico` | Histórico e gráficos           | Integrado à API |
-| `/reportar`  | Formulário de denúncia         | Integrado à API |
-| `/login`     | Login institucional            | Integrado à API |
-| `/painel`    | Painel operacional (bombeiros) | Integrado à API |
-| `/admin`     | Administração de usuários      | Integrado à API |
+| Rota         | Descrição                      |
+|--------------|--------------------------------|
+| `/`          | Mapa público com indicadores   |
+| `/historico` | Histórico e gráficos           |
+| `/reportar`  | Formulário de denúncia         |
+| `/login`     | Login institucional            |
+| `/painel`    | Painel operacional (bombeiros) |
+| `/admin`     | Administração de usuários      |
+
+---
 
 ## Como rodar
 
-### Opção 1 — Docker (frontend + backend juntos)
+### Pré-requisito
 
-Requer Docker Compose >= 2.20.
+`fire-control-api/` precisa estar na mesma pasta pai que `fire-control-web/`:
+
+```
+pasta-pai/
+├── fire-control-web/   ← este repositório
+└── fire-control-api/
+```
+
+### Docker — recomendado
+
+Sobe frontend e backend juntos. Requer Docker Compose >= 2.20.
 
 ```bash
-# Na raiz do repositório zetta/
 docker compose up --build
 ```
 
-- Frontend: http://localhost:3000
-- API: https://localhost:8000
-
-> Na primeira execução, acesse `https://localhost:8000` no navegador e aceite
-> o certificado autoassinado antes de usar o frontend.
-
-Para parar:
+| Serviço  | URL                    |
+|----------|------------------------|
+| Frontend | http://localhost:3000  |
+| API      | https://localhost:8000 |
 
 ```bash
-docker compose down
+docker compose down       # Para tudo
+docker compose down -v    # Para tudo e apaga os dados
 ```
 
-### Opção 2 — Desenvolvimento local (hot reload)
+### Desenvolvimento local
 
 **Pré-requisitos:** Node.js 20+, backend rodando em `https://localhost:8000`.
 
 ```bash
-# 1. Instalar dependências
 npm install
-
-# 2. Configurar variáveis de ambiente
 cp .env.example .env
-
-# 3. Iniciar servidor de desenvolvimento
-npm run dev
+npm run dev        # http://localhost:5173
 ```
-
-O servidor fica disponível em `http://localhost:5173`.
-
-### Build e lint
 
 ```bash
-npm run build   # Produção → dist/
-npm run lint    # ESLint
-npm run preview # Preview do build de produção
+npm run build      # Build de produção → dist/
+npm run lint       # ESLint
+npm run preview    # Preview do build
 ```
 
-## Integração de Ciência de Dados
+---
 
-O código de integração com a API do time de Data Science (`fire-control-data-science-main`)
-está isolado em `src/features/data-science/` e **não faz parte do bundle principal**.
-Para ativá-lo, importe `DataScienceSection` de lá e defina `VITE_DS_API_URL` no `.env`.
+## Stack
+
+React 19 · Vite 8 · Tailwind CSS 3 · React Leaflet · Recharts · Axios · Lucide React
+
+---
 
 ## Variáveis de ambiente
 
-| Variável          | Descrição                                    | Padrão                    |
-|-------------------|----------------------------------------------|---------------------------|
-| `VITE_API_URL`    | URL base da API REST (FastAPI)               | `https://localhost:8000`  |
-| `VITE_DS_API_URL` | URL da API de Ciência de Dados (opcional)    | `http://localhost:8001`   |
+| Variável          | Descrição                                          |
+|-------------------|----------------------------------------------------|
+| `VITE_API_URL`    | URL base da API REST (padrão: `/api` via proxy)    |
+| `VITE_DS_API_URL` | URL da API de Ciência de Dados (opcional)          |
+
+> A integração com a API de Ciência de Dados está isolada em `src/features/data-science/` e não faz parte do bundle principal.
