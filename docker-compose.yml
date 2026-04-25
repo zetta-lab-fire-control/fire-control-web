@@ -1,11 +1,13 @@
-# Inicia frontend + backend com um único comando:
+# Inicia frontend + backend + data science com um único comando:
 #   docker compose up --build
 #
 # Requer Docker Compose >= 2.20 (suporte à diretiva `include`).
-# Precisa que fire-control-api/ esteja na mesma pasta pai que fire-control-web/.
+# Precisa que fire-control-api/ e fire-control-data-science/
+# estejam na mesma pasta pai que fire-control-web/.
 #
-# Frontend: http://localhost:3000
-# API:      https://localhost:8000
+# Frontend:     http://localhost:3000
+# API backend:  https://localhost:8000
+# API DS:       http://localhost:8001
 
 include:
   - ../fire-control-api/deploy/compose/dev.yml
@@ -19,6 +21,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_BASE_URL: /
+        VITE_DS_API_URL: /ds-api
     ports:
       - "3000:80"
     networks:
@@ -26,4 +29,25 @@ services:
     depends_on:
       app:
         condition: service_healthy
+      data-science:
+        condition: service_healthy
+    restart: unless-stopped
+
+  data-science:
+    container_name: uai-data-science
+    build:
+      context: ../fire-control-data-science
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    networks:
+      - fire-control-api
+    volumes:
+      - ../fire-control-data-science/features:/app/features
+      - ../fire-control-data-science/models:/app/models
+      - ../fire-control-data-science/metrics:/app/metrics
+      - ../fire-control-data-science/data:/app/data
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
     restart: unless-stopped

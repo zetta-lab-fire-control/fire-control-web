@@ -1,0 +1,434 @@
+import { useEffect, useState, useCallback } from 'react'
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
+} from 'recharts'
+import {
+  BrainCircuit, Database, Flame, Loader2, AlertTriangle,
+  TrendingUp, Droplets, Wind, Search, BarChart2,
+} from 'lucide-react'
+import { dataScienceApi } from '../features/data-science/dsApi.js'
+
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+function avg(arr, key, { nonNegative = false } = {}) {
+  if (!arr?.length) return null
+  const vals = arr.map((r) => parseFloat(r[key])).filter((v) => !isNaN(v) && (!nonNegative || v >= 0))
+  if (!vals.length) return null
+  return vals.reduce((a, b) => a + b, 0) / vals.length
+}
+
+// ─── Componentes UI reutilizáveis ────────────────────────────────────────────
+
+function StatCard({ icon, label, value, sub, accent = 'zinc' }) {
+  const colors = {
+    orange:  'border-orange-800/30 bg-orange-500/10 text-orange-400',
+    violet:  'border-violet-800/30 bg-violet-500/10 text-violet-400',
+    emerald: 'border-emerald-800/30 bg-emerald-500/10 text-emerald-400',
+    blue:    'border-blue-800/30 bg-blue-500/10 text-blue-400',
+    red:     'border-red-800/30 bg-red-500/10 text-red-400',
+    zinc:    'border-zinc-700/30 bg-zinc-800/40 text-zinc-400',
+  }
+  return (
+    <div className={`rounded-2xl border p-4 ${colors[accent]}`}>
+      <p className="flex items-center gap-1.5 text-xs opacity-75 mb-2">{icon}{label}</p>
+      <p className="text-2xl font-bold text-zinc-100">{value ?? '—'}</p>
+      {sub && <p className="mt-1 text-xs opacity-60">{sub}</p>}
+    </div>
+  )
+}
+
+function SectionTitle({ icon, title, badge }) {
+  return (
+    <div className="flex items-center gap-2 mb-5">
+      {icon}
+      <h2 className="text-base font-semibold text-zinc-100">{title}</h2>
+      {badge && (
+        <span className="ml-auto rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-400">
+          {badge}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ─── Seção 1: visão geral ────────────────────────────────────────────────────
+
+function DatasetOverview({ info }) {
+  if (!info) return null
+  const inicio = info.periodo_inicio?.slice(0, 10) ?? '—'
+  const fim    = info.periodo_fim?.slice(0, 10)    ?? '—'
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatCard
+        icon={<Database size={14} />}
+        label="Registros INPE"
+        value={info.linhas?.toLocaleString('pt-BR')}
+        accent="violet"
+      />
+      <StatCard
+        icon={<TrendingUp size={14} />}
+        label="Período coberto"
+        value={`${inicio} → ${fim}`}
+        accent="blue"
+      />
+      <StatCard
+        icon={<Flame size={14} />}
+        label="Biomas"
+        value={info.biomas_presentes?.length}
+        sub={info.biomas_presentes?.join(', ')}
+        accent="orange"
+      />
+      <StatCard
+        icon={<Wind size={14} />}
+        label="Estados (UFs)"
+        value={info.ufs_presentes?.length}
+        accent="emerald"
+      />
+    </div>
+  )
+}
+
+// ─── Seção 2: estatísticas descritivas ──────────────────────────────────────
+
+const STATS_CONFIG = [
+  { key: 'RiscoFogo',    label: 'Risco de Fogo',       unit: '',    accent: 'red',     fmt: (v) => (v * 100).toFixed(1) + '%' },
+  { key: 'FRP',          label: 'FRP (Fire Rad. Power)',unit: 'MW',  accent: 'orange',  fmt: (v) => v.toFixed(1) },
+  { key: 'DiaSemChuva',  label: 'Dias sem chuva',       unit: 'dias',accent: 'blue',   fmt: (v) => v.toFixed(1) },
+  { key: 'Precipitacao', label: 'Precipitação',         unit: 'mm',  accent: 'emerald', fmt: (v) => v.toFixed(2) },
+]
+
+function DatasetStats({ stats }) {
+  if (!stats) return null
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {STATS_CONFIG.map(({ key, label, unit, accent, fmt }) => {
+        const s = stats[key]
+        if (!s) return null
+        const mean = parseFloat(s.mean ?? 0)
+        const p50  = parseFloat(s['50%'] ?? 0)
+        const max  = parseFloat(s.max  ?? 0)
+        const min  = parseFloat(s.min  ?? 0)
+
+        return (
+          <div key={key} className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+            <p className="text-sm font-semibold text-zinc-200 mb-4">{label}</p>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+              {[
+                { lbl: 'Média',    val: fmt(mean) },
+                { lbl: 'Mediana',  val: fmt(p50)  },
+                { lbl: 'Mínimo',   val: fmt(Math.max(0, min)) },
+                { lbl: 'Máximo',   val: fmt(max)  },
+              ].map(({ lbl, val }) => (
+                <div key={lbl}>
+                  <p className="text-zinc-500">{lbl}</p>
+                  <p className={`font-semibold text-${accent}-400`}>{val}{unit ? ` ${unit}` : ''}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Seção 3: explorador ────────────────────────────────────────────────────
+
+const MESES = [
+  { value: '', label: 'Todos os meses' },
+  { value: 1,  label: 'Janeiro' },  { value: 2,  label: 'Fevereiro' },
+  { value: 3,  label: 'Março' },    { value: 4,  label: 'Abril' },
+  { value: 5,  label: 'Maio' },     { value: 6,  label: 'Junho' },
+  { value: 7,  label: 'Julho' },    { value: 8,  label: 'Agosto' },
+  { value: 9,  label: 'Setembro' }, { value: 10, label: 'Outubro' },
+  { value: 11, label: 'Novembro' }, { value: 12, label: 'Dezembro' },
+]
+
+function Explorer({ biomas, ufs, anos }) {
+  const [bioma, setBioma]     = useState('')
+  const [uf, setUf]           = useState('')
+  const [ano, setAno]         = useState('')
+  const [mes, setMes]         = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult]   = useState(null)
+  const [error, setError]     = useState(null)
+
+  const handleSearch = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const filterBody = {
+        ...(bioma && { bioma }),
+        ...(uf    && { nome_uf: uf }),
+        ...(ano   && { ano: Number(ano) }),
+        ...(mes   && { mes: Number(mes) }),
+        n_linhas: 2000,
+      }
+      const filtered = await dataScienceApi.filterData(filterBody)
+      setResult(filtered)
+    } catch (err) {
+      setError(err?.message ?? 'Erro ao buscar dados.')
+    } finally {
+      setLoading(false)
+    }
+  }, [bioma, uf, ano, mes])
+
+  const rows        = result?.dados ?? []
+  const avgRisco    = avg(rows, 'RiscoFogo',   { nonNegative: true })
+  const avgSemChuva = avg(rows, 'DiaSemChuva', { nonNegative: true })
+  const avgChuva    = avg(rows, 'Precipitacao')
+  const avgFRP      = avg(rows, 'FRP')
+
+  // Distribuição de focos por bioma na amostra
+  const biomaChart = (() => {
+    if (!rows.length) return null
+    const counts = {}
+    rows.forEach((r) => {
+      const k = r.Bioma ?? 'N/A'
+      counts[k] = (counts[k] ?? 0) + 1
+    })
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8)
+  })()
+
+  const inputCls = 'rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-orange-500/60 focus:ring-1 focus:ring-orange-500/30'
+
+  return (
+    <div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 mb-4">
+        <div className="grid gap-1.5">
+          <label className="text-xs text-zinc-400">Bioma</label>
+          <select value={bioma} onChange={(e) => setBioma(e.target.value)} className={inputCls}>
+            <option value="">Todos</option>
+            {biomas.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+        </div>
+        <div className="grid gap-1.5">
+          <label className="text-xs text-zinc-400">Estado (UF)</label>
+          <select value={uf} onChange={(e) => setUf(e.target.value)} className={inputCls}>
+            <option value="">Todos</option>
+            {ufs.map((u) => <option key={u} value={u}>{u}</option>)}
+          </select>
+        </div>
+        <div className="grid gap-1.5">
+          <label className="text-xs text-zinc-400">Ano</label>
+          <select value={ano} onChange={(e) => setAno(e.target.value)} className={inputCls}>
+            <option value="">Todos</option>
+            {anos.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+        </div>
+        <div className="grid gap-1.5">
+          <label className="text-xs text-zinc-400">Mês</label>
+          <select value={mes} onChange={(e) => setMes(e.target.value)} className={inputCls}>
+            {MESES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSearch}
+        disabled={loading}
+        className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-500 disabled:opacity-60 transition"
+      >
+        {loading ? <Loader2 size={15} className="animate-spin" /> : <Search size={15} />}
+        {loading ? 'Analisando...' : 'Analisar'}
+      </button>
+
+      {error && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-700/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <AlertTriangle size={15} /> {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="mt-6 grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              icon={<Database size={14} />}
+              label="Registros encontrados"
+              value={result.total_linhas?.toLocaleString('pt-BR')}
+              sub={`Amostra: ${rows.length} linhas`}
+              accent="violet"
+            />
+            <StatCard
+              icon={<Flame size={14} />}
+              label="Risco de fogo médio"
+              value={avgRisco != null ? `${(avgRisco * 100).toFixed(1)}%` : '—'}
+              accent={avgRisco > 0.6 ? 'red' : avgRisco > 0.3 ? 'orange' : 'emerald'}
+            />
+            <StatCard
+              icon={<Wind size={14} />}
+              label="Dias sem chuva (média)"
+              value={avgSemChuva != null ? `${avgSemChuva.toFixed(1)} dias` : '—'}
+              accent="blue"
+            />
+            <StatCard
+              icon={<Droplets size={14} />}
+              label="Precipitação média"
+              value={avgChuva != null ? `${avgChuva.toFixed(2)} mm` : '—'}
+              accent="emerald"
+            />
+          </div>
+
+          {avgFRP != null && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-sm text-zinc-300">
+              <span className="text-zinc-500">FRP médio (Fire Radiative Power):</span>{' '}
+              <span className="font-semibold text-orange-300">{avgFRP.toFixed(2)} MW</span>
+              <span className="ml-2 text-xs text-zinc-600">— intensidade radiativa média dos focos</span>
+            </div>
+          )}
+
+          {biomaChart && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+              <p className="mb-4 text-sm font-semibold text-zinc-100">
+                Distribuição por bioma
+                <span className="ml-2 font-normal text-zinc-500 text-xs">— amostra de {rows.length.toLocaleString('pt-BR')} registros</span>
+              </p>
+              <div className="h-48">
+                <ResponsiveContainer>
+                  <BarChart data={biomaChart} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
+                    <XAxis dataKey="name" stroke="#52525b" tick={{ fontSize: 10, fill: '#a1a1aa' }} />
+                    <YAxis stroke="#52525b" tick={{ fontSize: 11, fill: '#a1a1aa' }} />
+                    <Tooltip
+                      contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 12 }}
+                      labelStyle={{ color: '#e4e4e7' }}
+                    />
+                    <Bar dataKey="count" name="Focos" radius={[6, 6, 0, 0]}>
+                      {biomaChart.map((_, i) => (
+                        <Cell key={i} fill={['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ef4444', '#14b8a6', '#f59e0b', '#6366f1'][i % 8]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Página ──────────────────────────────────────────────────────────────────
+
+export default function AnalysisPage() {
+  const [info, setInfo]       = useState(null)
+  const [stats, setStats]     = useState(null)
+  const [biomas, setBiomas]   = useState([])
+  const [ufs, setUfs]         = useState([])
+  const [loading, setLoading] = useState(true)
+  const [offline, setOffline] = useState(false)
+
+  // Anos derivados do período real do dataset
+  const anos = (() => {
+    const start = parseInt(info?.periodo_inicio?.slice(0, 4))
+    const end   = parseInt(info?.periodo_fim?.slice(0, 4))
+    if (!start || !end) return [2025, 2024, 2023, 2022]
+    const result = []
+    for (let y = end; y >= start; y--) result.push(y)
+    return result
+  })()
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      dataScienceApi.getInfo().catch(() => null),
+      dataScienceApi.getStats().catch(() => null),
+      dataScienceApi.getUniqueValues('Bioma').catch(() => null),
+      dataScienceApi.getUniqueValues('Nome_UF').catch(() => null),
+    ]).then(([dsInfo, dsStats, biomasData, ufsData]) => {
+      setOffline(!dsInfo && !dsStats)
+      setInfo(dsInfo)
+      setStats(dsStats)
+      setBiomas(biomasData?.valores ?? [])
+      setUfs(ufsData?.valores ?? [])
+    }).finally(() => setLoading(false))
+  }, [])
+
+  return (
+    <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
+      <section className="rounded-2xl border border-white/10 bg-zinc-800/50 backdrop-blur-md p-6 text-zinc-100">
+
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <BrainCircuit size={20} className="text-violet-400" />
+              <h1 className="text-2xl font-semibold">Análise preditiva</h1>
+              <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-400">
+                Data Science
+              </span>
+            </div>
+            <p className="text-sm text-zinc-400">
+              Dados históricos INPE/QUEIMADAS processados pelo ZettaLab — explore focos por região e
+              analise padrões de risco ao longo do tempo.
+            </p>
+          </div>
+        </div>
+
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <Loader2 size={15} className="animate-spin" /> Conectando à API de Ciência de Dados...
+          </div>
+        )}
+
+        {!loading && offline && (
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-5 py-5 text-sm text-zinc-400">
+            <AlertTriangle size={18} className="shrink-0 text-amber-500/70" />
+            <div>
+              <p className="font-medium text-zinc-300">API de Ciência de Dados não está acessível.</p>
+              <p className="text-xs mt-0.5">Certifique-se que o container <code className="text-violet-400">uai-data-science</code> está no ar.</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && !offline && (
+          <div className="grid gap-10">
+
+            {/* Dataset overview */}
+            <div>
+              <SectionTitle
+                icon={<Database size={16} className="text-violet-400" />}
+                title="Visão geral do dataset"
+                badge="INPE / QUEIMADAS"
+              />
+              <DatasetOverview info={info} />
+            </div>
+
+            {/* Estatísticas descritivas */}
+            <div>
+              <SectionTitle
+                icon={<BarChart2 size={16} className="text-blue-400" />}
+                title="Estatísticas descritivas"
+              />
+              <p className="mb-4 text-sm text-zinc-400">
+                Resumo estatístico das principais variáveis climáticas e de risco em todo o dataset.
+              </p>
+              <DatasetStats stats={stats} />
+            </div>
+
+            {/* Explorer */}
+            <div>
+              <SectionTitle
+                icon={<Search size={16} className="text-orange-400" />}
+                title="Explorador de focos históricos"
+              />
+              <p className="mb-4 text-sm text-zinc-400">
+                Filtre os registros INPE por bioma, estado, ano e mês. Veja estatísticas de risco
+                e a distribuição por bioma para o recorte selecionado.
+              </p>
+              <Explorer biomas={biomas} ufs={ufs} anos={anos} />
+            </div>
+
+          </div>
+        )}
+      </section>
+    </main>
+  )
+}

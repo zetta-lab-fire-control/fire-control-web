@@ -13,14 +13,19 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.VITE_PROXY_TARGET,
           changeOrigin: true,
-          secure: false, // Ignora erro de certificado auto-assinado (ESSENCIAL)
-          xfwd: true,    // Adiciona headers X-Forwarded-For
+          secure: false,
+          xfwd: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
           configure: (proxy, _options) => {
             proxy.on('error', (err, _req, _res) => {
               console.log('Erro no Proxy do Vite:', err);
             });
           },
+        },
+        '/ds-api': {
+          target: env.VITE_DS_PROXY_TARGET ?? 'http://localhost:8001',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ds-api/, ''),
         },
       },
     },
