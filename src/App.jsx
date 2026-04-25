@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import AnalysisPage from './pages/AnalysisPage.jsx'
 import { Icon } from 'leaflet'
 import markerIconUrl from 'leaflet/dist/images/marker-icon.png'
 import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
@@ -25,6 +26,7 @@ function App() {
             {/* Rotas públicas */}
             <Route path="/" element={<HomePage />} />
             <Route path="/historico" element={<HistoryPage />} />
+            <Route path="/analise" element={<AnalysisPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/cadastro" element={<RegisterPage />} />
 

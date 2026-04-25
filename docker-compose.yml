@@ -19,6 +19,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_BASE_URL: /
+        VITE_DS_API_URL: http://localhost:8001
     ports:
       - "3000:80"
     networks:

@@ -1,4 +1,4 @@
-import { LogIn, Home, History, Megaphone, LogOut, ShieldCheck, Crown, UserPlus } from 'lucide-react'
+import { LogIn, Home, History, Megaphone, LogOut, ShieldCheck, Crown, UserPlus, BrainCircuit } from 'lucide-react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../contexts/AuthContext.jsx'
 
@@ -62,6 +62,11 @@ export default function Navbar() {
           <NavLink to="/historico" className={linkClass}>
             <History size={15} />
             <span className="hidden sm:inline">Histórico</span>
+          </NavLink>
+
+          <NavLink to="/analise" className={linkClass}>
+            <BrainCircuit size={15} />
+            <span className="hidden sm:inline">Análise</span>
           </NavLink>
 
           <NavLink to="/reportar" className={linkClass}>

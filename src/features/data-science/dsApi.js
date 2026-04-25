@@ -1,25 +1,42 @@
 import axios from 'axios'
 
-export const dataScienceApi = {
-  _http: axios.create({
-    baseURL: import.meta.env.VITE_DS_API_URL ?? 'http://localhost:8001',
-    headers: { 'Content-Type': 'application/json' },
-    timeout: 8_000,
-  }),
+const _http = axios.create({
+  baseURL: import.meta.env.VITE_DS_API_URL ?? 'http://localhost:8001',
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 15_000,
+})
 
+export const dataScienceApi = {
   getInfo() {
-    return this._http.get('/dados/info').then((r) => r.data)
+    return _http.get('/dados/info').then((r) => r.data)
   },
 
   getStats() {
-    return this._http.get('/dados/estatisticas').then((r) => r.data)
+    return _http.get('/dados/estatisticas').then((r) => r.data)
+  },
+
+  getUniqueValues(coluna) {
+    return _http.get(`/dados/valores-unicos/${coluna}`).then((r) => r.data)
   },
 
   filterData(params = {}) {
-    return this._http.post('/dados/filtrar', params).then((r) => r.data)
+    return _http.post('/dados/filtrar', params).then((r) => r.data)
   },
 
   listModels() {
-    return this._http.get('/modelos/listar').then((r) => r.data)
+    return _http.get('/modelos/listar').then((r) => r.data)
+  },
+
+  predictOnDataset({ nomeModelo, tipoModelo, filtroAno, filtroBioma, filtroUf, nLinhas = 1000 }) {
+    return _http.post('/predicao/dataset', null, {
+      params: {
+        nome_modelo: nomeModelo,
+        tipo_modelo: tipoModelo,
+        ...(filtroAno   && { filtro_ano:   filtroAno }),
+        ...(filtroBioma && { filtro_bioma: filtroBioma }),
+        ...(filtroUf    && { filtro_uf:    filtroUf }),
+        n_linhas: nLinhas,
+      },
+    }).then((r) => r.data)
   },
 }
